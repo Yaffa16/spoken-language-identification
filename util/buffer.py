@@ -1,6 +1,7 @@
 """
 This module implements a buffer utility for batching purposes. With large
 amounts of data, it is possible to queue the data in a separated thread.
+TODO: shuffle
 """
 
 from abc import abstractmethod
@@ -108,26 +109,30 @@ class BufferThread(threading.Thread):
         """Short hand to start the thread."""
         self.start()
 
-    def get_batch(self, size: int) -> numpy.ndarray:
+    def get_batch(self, size: int) -> (numpy.ndarray, numpy.ndarray):
         """
         Get a batch of data.
 
         :param size: int
             Size of the batch
-        :return: list
-            List containing a batch of read data.
+        :return: (numpy.ndarray, numpy.ndarray)
+            Tuple of arrays. The first array represents the names/ids of data,
+            and the second array represents the data itself.
 
         Note: in case the size of the batch is greater than the amount of data
         available, this method will continuously attempt to fill the necessary
         amount of data, or, if the thread is not alive, only the read amount
         will be returned.
         """
-        batch = []
-        while len(batch) < size:
+        ids = []
+        data = []
+        while len(data) < size:
             if self._buffer.empty() and not self.is_alive():
                 break
-            batch.append(numpy.asarray(self._buffer.get()))
-        return numpy.asarray(batch)
+            i, d = self._buffer.get()
+            ids.append(i)
+            data.append(d)
+        return numpy.asarray(ids), numpy.asarray(data)
 
     def stop(self):
         """
