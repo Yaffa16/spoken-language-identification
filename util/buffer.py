@@ -12,8 +12,8 @@ import os
 class BufferThread(threading.Thread):
     """A thread which buffers data in a queue"""
 
-    def __init__(self, data_ids_labels: list, source: str,
-                 buffer: queue, group=None, target=None, name=None,
+    def __init__(self, source: str, buffer: queue, data_ids_labels: list=None,
+                 group=None, target=None, name=None,
                  args=(), kwargs=None, verbose=None):
         """
         Initializes a new buffer thread.
@@ -21,12 +21,26 @@ class BufferThread(threading.Thread):
         :param data_ids_labels: list
             List containing the tuples with the identification and label of each
             instance of data.
+
+            Expected format of file:
+            'name_of_file_1.ext', ..., ...
+            'name_of_file_2.ext', ..., ...
+            ...
+            'name_of_file_n.ext', ..., ...
+            *ext is the file extension.
+
+            Default to none, all files in the source will be processed.
+
         :param source: str
             Path to the raw data.
         :param buffer:
             A queue to buffer data.
 
-            See threading.Thread for other parameters documentation.
+            Each read data will be put in the buffer as tuples. Each tuple have
+            the following format:
+            ('name/id_of_file', 'read_object')
+
+        See threading.Thread for more information.
         """
         super(BufferThread, self).__init__()
 
@@ -35,22 +49,24 @@ class BufferThread(threading.Thread):
         self._lock = threading.Lock()
         self._source = source
         self._current = 0
-        self._instances_ids = []
-        self._instances_labels = []
         self._ids_files = []
         self._buffer = buffer
         self._exit_request = False
-        for line in data_ids_labels:
-            data = line.split(',')
-            self._instances_ids.append(data[0][:-4])
-            self._instances_labels.append(data[1][:-1])
 
-        instances_ids_temp = self._instances_ids.copy()
-        for file in os.listdir(source):
-            if file[:-4] in instances_ids_temp:
-                # Append file name, file name + extension:
+        if data_ids_labels is not None:
+            instances_ids = []
+            for line in data_ids_labels:
+                data = line.split(',')
+                instances_ids.append(data[0][:-4])
+
+            for file in os.listdir(source):
+                if file[:-4] in instances_ids:
+                    # Append file name, file name + extension:
+                    self._ids_files.append((file[:-4], file))
+                    instances_ids.remove(file[:-4])  # + speed
+        else:
+            for file in os.listdir(source):
                 self._ids_files.append((file[:-4], file))
-                instances_ids_temp.remove(file[:-4])  # + speed
 
     @abstractmethod
     def loader(self, source_path: str, *args, **kwargs):
