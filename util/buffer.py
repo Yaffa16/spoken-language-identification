@@ -5,6 +5,7 @@ amounts of data, it is possible to queue the data in a separated thread.
 
 from abc import abstractmethod
 import threading
+import numpy
 import queue
 import os
 
@@ -107,7 +108,7 @@ class BufferThread(threading.Thread):
         """Short hand to start the thread."""
         self.start()
 
-    def get_batch(self, size: int) -> list:
+    def get_batch(self, size: int) -> numpy.ndarray:
         """
         Get a batch of data.
 
@@ -125,8 +126,8 @@ class BufferThread(threading.Thread):
         while len(batch) < size:
             if self._buffer.empty() and not self.is_alive():
                 break
-            batch.append(self._buffer.get())
-        return batch
+            batch.append(numpy.asarray(self._buffer.get()))
+        return numpy.asarray(batch)
 
     def stop(self):
         """
