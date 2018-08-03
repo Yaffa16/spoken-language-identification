@@ -11,15 +11,15 @@ def timing(c: callable) -> callable:
         Wrapper function to the callable object, which measures the elapsed
         time.
     """
-    def wrapper(*args, **kargs):
+    def wrapper(*args, **kwargs):
         """
         :param args: arguments are passed through to the callable object.
-        :param kargs: K arguments are passed through to the callable object.
+        :param kwargs: K arguments are passed through to the callable object.
         """
         t1 = time.time()
-        c(*args, **kargs)
+        c(*args, **kwargs)
         t2 = time.time()
-        print('%r (%r, %r) %2.2f sec' % (c.__name__, args, kargs, t2-t1))
+        print('%r (%r, %r) %2.2f sec' % (c.__name__, args, kwargs, t2 - t1))
 
     return wrapper
 

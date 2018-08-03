@@ -1,3 +1,2 @@
 from util.timing import timing
-from util.exceptions import NotLoadedError
-from util.audiosignal import AudioSignal
+from util.audio.audiosignal import AudioSignal
