@@ -1,5 +1,5 @@
 from scipy.io import wavfile
-from util.exceptions import NotLoadedError
+from core.exceptions import NotLoadedError
 import numpy as np
 import pyaudio
 import wave
