@@ -4,7 +4,7 @@
 import os
 import argparse
 from preprocessing.effects import *
-from util.audiosignal import AudioSignal
+from util.audio.audiosignal import AudioSignal
 from util.timing import Timer
 
 
@@ -15,11 +15,11 @@ if __name__ == '__main__':
                                          'will be applied to the file, if is a '
                                          'directory, all the files in the '
                                          'source will be processed. Default to '
-                                         'current working directory.')
+                                         '_current working directory.')
     parser.add_argument('--output', help='Output directory. If the directory '
                                          'not exists, the program will be '
                                          'create them automatically. Default '
-                                         'to current working directory.')
+                                         'to _current working directory.')
     parser.add_argument('effect', help='Effect to apply.',
                         choices=AVAILABLE_EFFECTS)
     parser.add_argument('--effect_options', help='Effect options arguments',

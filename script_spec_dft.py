@@ -4,7 +4,7 @@
 # Script imports:
 import os
 import argparse
-from util import convert
+from util.towav import convert
 from preprocessing.spectrogram import specgram_dft
 
 

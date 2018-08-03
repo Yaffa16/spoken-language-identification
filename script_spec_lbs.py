@@ -4,7 +4,7 @@
 # Script imports:
 import os
 import argparse
-from util import convert
+from util.towav import convert
 from preprocessing.spectrogram import specgram_lbrs
 
 
@@ -29,9 +29,9 @@ if __name__ == '__main__':
                                            'librosa.feature.melspectrogram '
                                            'function and \'log\' uses the '
                                            'librosa.cqt function.',
-                        options=['default', 'mel', 'log'], default='default')
+                        choices=['default', 'mel', 'log'], default='default')
     parser.add_argument('--y_axis', help=' Range for the y-axes.',
-                        options=['linear', 'mel', 'log'])
+                        choices=['linear', 'mel', 'log'])
     parser.add_argument('--file_names', help='Source which contains audio '
                                              'file names to process. If no '
                                              'file is provided, all files in '

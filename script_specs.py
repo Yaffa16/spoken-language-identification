@@ -33,17 +33,17 @@ def files_to_process(files_list, output_dir):
 
 
 def process_files_in_parallel(fun: callable, data_path: str, plot_path: str,
-                              files_list: list, **kargs):
+                              files_list: list, **kwargs):
     if len(files_list) == 0:
         return
     else:
-        print('Processing files through function', fun.__name__, kargs)
+        print('Processing files through function', fun.__name__, kwargs)
     with concurrent.futures.ProcessPoolExecutor(arguments.workers) \
             as executor:
         futures = [executor.submit(fun, audiopath=data_path + '/' + file_p,
                                    plotpath=plot_path,
                                    name=file_p[:-4],
-                                   **kargs)
+                                   **kwargs)
                    for file_p in files_list]
 
         kwargs = {
@@ -67,7 +67,7 @@ if __name__ == '__main__':
                                                  'of wav audio files.')
     parser.add_argument('source', help='Source directory.')
     parser.add_argument('output', help='Output directory.')
-    parser.add_argument('--workers', help='Define how many process to run in '
+    parser.add_argument('--data', help='Define how many process to run in '
                                           'parallel.', default=4, type=int)
     parser.add_argument('--check', help='Check output directories ignoring '
                                         'files already processed.',
