@@ -1,8 +1,7 @@
 """
 This module implements some audio effects generators.
 """
-from util.audiosignal import AudioSignal
-from util.timing import timing
+from util.audio.audiosignal import AudioSignal
 from abc import abstractmethod
 from pydub import AudioSegment
 from scipy.io import wavfile
