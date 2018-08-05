@@ -14,7 +14,7 @@ from keras.layers.normalization import BatchNormalization
 from keras.utils import to_categorical
 from keras.utils.vis_utils import plot_model
 from sklearn import preprocessing
-from util.callbacks import CustomEarlyStopping
+from util.callbacks import EarlyStoppingRange
 import imageio
 import numpy as np
 import warnings
@@ -159,14 +159,14 @@ def main(X_train, y_train, X_val, y_val, X_test, y_test):
 
     # H = model.fit_generator # todo ?
 
-    es = CustomEarlyStopping(monitor='val_acc', min_delta=0.01, patience=25,
-                             verbose=2, mode='auto', min_val_monitor=0.8)
-    es2 = keras.callbacks.EarlyStopping(monitor='val_los', patience=100,
-                                        verbose=2, mode='auto', min_delta=0.01)
+    es = EarlyStoppingRange(monitor='val_acc', min_delta=0.01, patience=25,
+                            verbose=2, mode='auto', min_val_monitor=0.8)
+    es2 = keras.callbacks.EarlyStopping(monitor='val_loss', patience=100,
+                                        verbose=2, mode='auto')
 
     H = model.fit(X_train, y_train, batch_size=16, epochs=epochs, verbose=1,
                   validation_data=(X_test, y_test), shuffle=False,
-                  callbacks=[es])
+                  callbacks=[es, es2])
 
     score = model.evaluate(X_val, y_val, verbose=0)
     print('Test loss:', score[0])
@@ -187,7 +187,7 @@ def main(X_train, y_train, X_val, y_val, X_test, y_test):
     plt.savefig('scratch_train.png')
 
     print('[INFO] serializing network...')
-    model.save('models/scratch_model')
+    model.save('models/scratch_model/model.h5')
     print('DONE')
 
 
