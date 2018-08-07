@@ -1,8 +1,10 @@
 # Scratch for neural networks modeling
 
-from util.data.buffer import BufferThread
+import matplotlib
+matplotlib.use("Agg")
+
 from matplotlib import pyplot as plt
-import keras
+from util.data.buffer import BufferThread
 from keras import optimizers
 from keras.models import Sequential
 from keras.layers import (Conv2D,
@@ -14,15 +16,16 @@ from keras.layers.normalization import BatchNormalization
 from keras.utils import to_categorical
 from keras.utils.vis_utils import plot_model
 from sklearn import preprocessing
-from util.callbacks import EarlyStoppingRange
+from core.callbacks import EarlyStoppingRange
+import keras
 import imageio
 import numpy as np
-import warnings
-import matplotlib
 import os
 
+# todo: implement model in a module
+# todo: parse json files to get the hyper parameters
+# todo: train model with all data
 
-matplotlib.use("Agg")
 
 # Define some constants/variables:
 hdf5_path = 'data/hdf5/topcoder/trainingdata/sox.hdf5'
@@ -131,7 +134,7 @@ def build(input_shape, classes, optimizer,
     return model
 
 
-def main(X_train, y_train, X_val, y_val, X_test, y_test):
+def main(X_train, y_train, X_val, y_val, X_test, y_test, num_classes):
 
     print('Size of train data set: {}, size of test data set: {}'.
           format(X_train.shape[0], X_test.shape[0]))
@@ -157,7 +160,7 @@ def main(X_train, y_train, X_val, y_val, X_test, y_test):
 
     # Network training:
 
-    # H = model.fit_generator # todo ?
+    # H = model.fit_generator # todo: check if is necessary to batch data
 
     es = EarlyStoppingRange(monitor='val_acc', min_delta=0.01, patience=25,
                             verbose=2, mode='auto', min_val_monitor=0.8)
@@ -191,22 +194,7 @@ def main(X_train, y_train, X_val, y_val, X_test, y_test):
     print('DONE')
 
 
-if __name__ == '__main__':
-
-    # Model constants:
-    batch_norm = True
-    dropout = 0.5
-    epochs = 1000
-
-    # data_ids_labels = open(data_ids_labels_path, 'r').readlines()[1:]
-    # labels = []
-    # for line in data_ids_labels:
-    #     labels.append(line.split(',')[1][:-2])
-    # num_classes = np.unique(labels).shape[0]
-
-    # serialize(os.listdir(data_path), labels)
-    # main(load_data())
-
+def load_data():
     data_ids_labels = open('data/spectrograms/topcoder_small/trainingData.csv',
                            'r').readlines()
     labels = []
@@ -241,13 +229,15 @@ if __name__ == '__main__':
     y_train = to_categorical(y_train, num_classes=num_classes)
     y_val = to_categorical(y_val, num_classes=num_classes)
 
-    # y_transform = to_categorical(le.transform(labels))
-    # for i in range(len(labels)):
-    #     if labels[i] == 'Adiokr':
-    #         assert y_transform[i][0] == 1
-    #     elif labels[i] == 'Aguaruna Awaj':
-    #         assert y_transform[i][1] == 1
-    #     else :
-    #         assert y_transform[i][2] == 1
+    return X_train, y_train, X_val, y_val, X_test, y_test, num_classes
 
-    main(X_train, y_train, X_val, y_val, X_test, y_test)
+
+if __name__ == '__main__':
+
+    # Model constants:
+    batch_norm = True
+    dropout = 0.5
+    epochs = 1000
+
+    X_train, y_train, X_val, y_val, X_test, y_test, num_classes = load_data()
+    main(X_train, y_train, X_val, y_val, X_test, y_test, num_classes)
