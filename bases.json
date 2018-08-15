@@ -34,11 +34,5 @@
     "lang": "en",
     "samples": "unknown",
     "format": "wav"
-  },
-  "CV_CORPUS": {
-    "path": "data/raw/cv_corpus_v1",
-    "lang": "en",
-    "samples": "unknown",
-    "format": "mp3"
   }
 }
