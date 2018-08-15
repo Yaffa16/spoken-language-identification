@@ -1,0 +1,44 @@
+{
+  "CIEMPIESS": {
+    "path": "data/raw/CIEMPIESS_SPH",
+    "lang": "es",
+    "samples": "unknown",
+    "format": "sph"
+  },
+  "LAPSBM": {
+    "path": "data/raw/lapsbm",
+    "lang": "pt",
+    "samples": "unknown",
+    "format": "wav"
+  },
+  "SID": {
+    "path": "data/raw/sid",
+    "lang": "pt",
+    "samples": "unknown",
+    "format": "wav"
+  },
+  "VOX_FORGE_PT": {
+    "path": "data/raw/voxforge_ptbr",
+    "lang": "pt",
+    "samples": "unknown",
+    "format": "wav"
+  },
+  "LIBRI_SPEECH": {
+    "path": "data/raw/LibriSpeech",
+    "lang": "en",
+    "samples": "unknown",
+    "format": "flac"
+  },
+  "VOX_FORGE": {
+    "path": "data/raw/voxforge",
+    "lang": "en",
+    "samples": "unknown",
+    "format": "wav"
+  },
+  "CV_CORPUS": {
+    "path": "data/raw/cv_corpus_v1",
+    "lang": "en",
+    "samples": "unknown",
+    "format": "mp3"
+  }
+}
