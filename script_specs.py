@@ -16,22 +16,54 @@ if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
 
-def files_to_process(files_list, output_dir):
-    this_files = files_list.copy()
+def files_to_process(files_list: list, output_dir: str,
+                     contains_extension=True, is_base_name=True) -> list:
+    """
+    Build a list of remaining files to process.
+
+    This function checks the output directories searching for generated
+    spectrogram images.
+
+    :param files_list: list
+        The original list of file names to process.
+        Only names is considered by default (is_base_name=True).
+    :param output_dir: str
+        The path of the data set (output directory).
+    :param contains_extension: bool
+        Must be True if the file names contains file extensions (for instance
+        file.wav). Default to True.
+    :param is_base_name: bool
+        Consider the provided list of files as a list of names. If you provide
+        a list of paths, set this as False. Default to True.
+
+    :return: list
+        A list containing the remaining files to process (in the format of the
+        provided list).
+    """
+    # Make a copy of the list
+    remaining_files = files_list.copy()
     print('Checking files in ', output_dir)
     counter = 0
     # List the output files in the directory
     output_files = os.listdir(output_dir)
-    for file_name in files_list:
-        if str(file_name[:-3]) + 'png' in output_files:
-            this_files.remove(file_name)
-            specs_imgs += 1
+    # Iterate over file names and eliminate from this_files if the respective
+    # spectrogram already exists.
+    for el in files_list:
+        if not is_base_name:
+            file_name = os.path.basename(el)
+        else:
+            file_name = el
+        if contains_extension:
+            file_name = str(file_name.split('.')[-2])
+        if file_name in output_files:
+            remaining_files.remove(el)
+            counter += 1
     print('There are {} files remaining to process, '
           'and {} spectrogram images in {}.'.format(len(files_list)
                                                     - counter,
                                                     counter,
                                                     output_dir))
-    return this_files
+    return remaining_files
 
 
 def process_files_in_parallel(data_path: str, plot_path: str, files_list: list,
@@ -175,3 +207,20 @@ if __name__ == '__main__':
                                   workers=arguments.workers)
 
     print('WORK DONE, total taken time: %.03f sec.' % timer.interval)
+
+    if arguments.check_after:
+        print("Checking, this might take a while... ")
+        files_dft = files_to_process(files, output + '/dft')
+        files_sox = files_to_process(files, output + '/sox')
+        files_lbr_dft = files_to_process(files, output + '/librosa/default')
+        files_lbr_log = files_to_process(files, output + '/librosa/log')
+        files_lbr_mel = files_to_process(files, output + '/librosa/mel')
+        files_lbr_dm = files_to_process(files, output + '/librosa/default/log')
+        files_lbr_dl = files_to_process(files, output + '/librosa/default/mel')
+        files_plt = files_to_process(files, output + '/matplotlib')
+
+        with open('logs/scripts/specs_remaining_files', 'w') as file:
+            for rem_file in list(files_dft + files_sox + files_lbr_dft +
+                                 files_lbr_dl + files_lbr_log + files_lbr_mel +
+                                 files_lbr_dm + files_plt):
+                file.write('\n' + rem_file)
