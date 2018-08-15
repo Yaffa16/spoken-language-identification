@@ -38,3 +38,4 @@ tqdm==4.24.0
 Werkzeug==0.14.1
 wincertstore==0.2
 pydub==0.22.1
+python-speech-features==0.6
