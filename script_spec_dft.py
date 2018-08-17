@@ -4,7 +4,7 @@
 # Script imports:
 import os
 import argparse
-from util.towav import convert
+from util.towav import sox_convert
 from preprocessing.spectrogram import specgram_dft
 
 
@@ -34,8 +34,6 @@ if __name__ == '__main__':
     file_names_path = args.file_names
     wav_dir = args.wav_dir
     file_format = args.file_format
-    y_axis = args.y_axis
-    alg = args.algorithm
 
     if file_names_path is None:
         file_names = os.listdir(data_dir)
@@ -44,22 +42,27 @@ if __name__ == '__main__':
 
     for i, line in enumerate(file_names):
         file_path = str(line.split(',')[0])
-        file_name = str(file_path[:-4])
-        if wav_dir is None:
-            wav_file_name = 'tmp.wav'
+        if len(file_path.split('.')) > 1:
+            file_format = file_path.split('.')[-1]
+            file_name = file_path.split('.')[-2]
         else:
-            wav_file_name = file_name + '.wav'
-
+            continue
         try:
+            if wav_dir is None:
+                wav_file_name = 'tmp.wav'
+                wav_dir = '.'
+            else:
+                wav_file_name = file_name + '.wav'
+
             if file_format != 'wav':
-                convert(file_path, wav_dir + '/' + wav_file_name)
+                sox_convert(file_path, wav_dir + os.sep + wav_file_name)
 
-                specgram_dft(audiopath=wav_dir + '/' + wav_file_name,
-                             name=wav_file_name)
+                specgram_dft(audiopath=wav_dir + os.sep + wav_file_name,
+                             name=file_name)
 
-        except RuntimeError:
-            print('WARNING: file {} not converted, skipping'.format(file_path))
+            if wav_dir is None:
+                os.remove(wav_file_name)
+            print("processed %d files of %d" % (i + 1, len(file_names)))
 
-        if wav_dir is None:
-            os.remove(wav_file_name)
-        print("processed %d files of %d" % (i + 1, len(file_names)))
+        except Exception:
+            print('WARNING: skipping {}'.format(file_path))
