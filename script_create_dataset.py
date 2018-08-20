@@ -5,6 +5,9 @@ Dependencies:
     - sox: this module uses the sox software to convert audio files to wav
     format. Please be sure you have this software installed in your PATH system
     variable. More details in http://sox.sourceforge.net
+
+Note:
+    Duplicate files are being ignored.
 """
 import glob
 import concurrent.futures
@@ -59,6 +62,10 @@ def files_to_process(files_list: list, output_dir: str,
         if file_name + '.wav' in output_files:
             remaining_files.remove(el)
             counter += 1
+        # if file_name not in duplicates:
+        #     duplicates.add(file_name)
+        # else:
+        #     print('DUPLICATE: ', file_name)
     print('There are {} files remaining to process, '
           'and {} files in {}.'.format(len(files_list) - counter, counter,
                                        output_dir))
@@ -158,13 +165,14 @@ if __name__ == '__main__':
     parser.add_argument('--check', help='Check output directories ignoring '
                                         'files already processed.',
                         action='store_true')
-    parser.add_argument('--check_after', help='Check output directories '
-                                              'after processing files and save '
-                                              'a list of failed files.',
+    parser.add_argument('--just_check', help='Check output directories. A csv '
+                                             'log file will be created '
+                                             'containing the remaining files to'
+                                             ' process. No processing will be '
+                                             'performed.',
                         action='store_true')
     parser.add_argument('--v', help='Change verbosity level (sox output)',
                         default=0)
-    os.makedirs('logs/scripts/', exist_ok=True)
 
     # Set arguments settings:
     arguments = parser.parse_args()
@@ -174,8 +182,16 @@ if __name__ == '__main__':
     workers = arguments.workers
     verbose = arguments.v
 
+    # Enable logging the remaining files with just check option.
+    if arguments.just_check:
+        os.makedirs('logs/scripts/', exist_ok=True)
+        log_remaining = open('logs/scripts/dataset_remaining_files.csv', 'w')
+        log_remaining.write('base' + ',' + 'original_base' + ',' + 'path')
+    else:
+        log_remaining = None
+
     # Load json info about bases
-    with open('bases.json') as base_json:
+    with open('corpus.json') as base_json:
         bases_json = json.load(base_json)
 
     # The files will be processed as a new base by their language
@@ -197,15 +213,25 @@ if __name__ == '__main__':
         out_dir = output + os.sep + bases_json[base]['lang'] + os.sep
 
         # Check processed files if necessary, removing them
-        if arguments.check:
+        if arguments.check or arguments.just_check:
             files_paths = files_to_process(all_files_path, out_dir,
                                            contains_extension=True,
                                            is_base_name=False)
         else:
+            files_paths = None
+
+        # Set the new base:
+        new_base_name = bases_json[base]['lang']
+
+        if log_remaining is not None and files_paths is not None:
+            for f in files_paths:
+                log_remaining.write('\n' + new_base_name + ',' + base + ',' + f)
+
+        else:
             files_paths = all_files_path
 
         # Append file paths to the respective language base
-        files_list_lang[bases_json[base]['lang']] += files_paths
+        files_list_lang[new_base_name] += files_paths
 
     print('TOTAL FILES TO BE PROCESSED: %d' %
           (sum(len(b) for b in files_list_lang.values())))
@@ -225,12 +251,16 @@ if __name__ == '__main__':
                                       len(files_list_lang[x]),
                                       files_list_lang))
         print('\nSUMMARY\n-------')
-        print(pd.DataFrame(d))
+        print(str(pd.DataFrame(d)) + '\n')
+
+    if arguments.just_check:
+        exit(0)
 
     # Process files of each language as a new base:
     for base in files_list_lang:
-        print('[INFO] processing base in "%s"' % base)
-
+        if len(files_list_lang[base]) == 0:
+            continue
+        print('[INFO] processing base "%s"' % base)
         # Call function and make data set
         create_dataset(dataset_dir=output + os.sep + base,
                        file_list=files_list_lang[base],
@@ -239,13 +269,3 @@ if __name__ == '__main__':
                        verbose_level=verbose,
                        trim_interval=(0, seconds) if seconds is not None else
                        None)
-
-        # Check base
-        if arguments.check_after:
-            print("Checking, this might take a while... ")
-            with open('logs/scripts/dataset_remaining_files.csv', 'a') as file:
-                file.write(base + ',' + 'path')
-                for file_n in list(files_to_process(
-                        files_list_lang[base],
-                        output + os.sep + base)):
-                    file.write('\n' + base + ',' + file_n)
