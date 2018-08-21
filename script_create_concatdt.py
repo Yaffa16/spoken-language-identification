@@ -15,6 +15,7 @@ import argparse
 import importlib
 import numpy as np
 import wave
+import time
 from collections import defaultdict
 from tqdm import tqdm
 
@@ -66,167 +67,324 @@ def files_to_process(files_list: list, output_dir: str,
     return remaining_files
 
 
-def create_dataset(file_list: list, dataset_dir: str, trim_interval: int,
-                   normalize=True, num_workers: int = None, name: str=None,
-                   exist_ok=False, verbose_level=0):
+def concat(file_list: list, output_dir: str, chunk_size: int=40,
+           num_workers: int=None, name: str=None,
+           exist_ok=False, verbose_level=0):
     """
-    Creates a dataset.
+    Concat a list of audio files in one file.
 
     :param file_list: list
         List of files to process (paths).
-    :param dataset_dir: str
-        Output directory (data set).
+    :param output_dir: str
+        Output directory.
+    :param chunk_size: int
+        Chunk size to concat audio files. The final result is the same. This
+        can change the general performance of the concatenation process.
     :param name:
         Output name (concatenated audio).
     :param num_workers: int
-        The maximum number of processes that can be used to execute the given
-        calls.
-    :param trim_interval: tuple, shape=(start, end)
-        Trim audio. Default to None (no trim will be performed).
-    :param normalize: bool
-        Normalizes audio.
+        The maximum number of processes that can be used to execute the tasks.
     :param exist_ok: bool
         If the target name already exists, raise an FileExistsError if exist_ok
         is False. Otherwise the file will be replaced.
     :param verbose_level: int
         Verbosity level. See sox for more information.
     """
+    if len(file_list) == 0:
+        raise ValueError('Not possible to process an empty list of files.')
 
-    os.makedirs(dataset_dir, exist_ok=True)
-    print('[INFO] creating data set [%s]' % dataset_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    print('[INFO] creating data set [%s]' % output_dir)
 
-    name = name + '.wav' if name is not None else 'temp.wav'
+    # Temp files (will be removed after concatenation process)
+    temp_files = set()
 
     # Concat all files
-    chunk_size = 40  # Windows string cmd line limitation
-    print('[INFO] concatenating chunks of size %s' % chunk_size)
-    chunks = [file_list[i:i + chunk_size]
-              for i in range(0, len(file_list), chunk_size)]
-    for i in range(len(chunks)):
-        chunks[i] = ' '.join(chunks[i])
+    print('[INFO] concatenating chunks of size %d' % chunk_size)
+    while len(file_list) > 1:  # Will concat chunk of files until lasts one left
+        print('[remaining files to process: %d]' % len(file_list))
+        # Create chunks
+        chunks = [file_list[i:i + chunk_size]
+                  for i in range(0, len(file_list), chunk_size)]
 
-    data_out = dataset_dir + os.sep + name
+        # Reset file list
+        file_list = []
 
-    if os.path.isfile(data_out) and not exist_ok:
-        raise FileExistsError()
-    elif os.path.isfile(data_out):
-        os.system('sox -V%s %s %s %s' % (verbose_level, chunks[0], data_out,
-                                         data_out))
-    else:
-        os.system('sox -V%s %s %s' % (verbose_level, chunks[0], data_out))
-
-    for i in tqdm(range(1, len(chunks))):
-        os.system('sox -V%s %s %s %s' % (verbose_level, chunks[i], data_out,
-                                         data_out))
-
-    # Trim audio
-    if trim_interval is not None:
-        audio = wave.open(data_out, 'r')  # todo check size
-        duration = audio.getnframes() / float(audio.getframerate())
-        audio.close()
-        trims = np.arange(0, duration, trim_interval)
-        trims = list(zip(trims[0:len(trims) - 1], trims[1:len(trims)]))
-
-        # Make parallel calls to trim the audio file
+        # Make parallel calls to concat chunks
         with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) \
                 as executor:
             futures = [
-                executor.submit(fn=trim,
-                                audio_path=data_out,
-                                output_path=dataset_dir + '_' +
-                                            str(t[0]) + '_' + str(t[1]),
-                                start=t[0],
-                                end=t[1],
+                executor.submit(fn=concat_chunks,
+                                file_list=chunk,
+                                output_path=output_dir + os.sep,
                                 verbose_level=verbose_level)
-                for t in trims]
+                for chunk in chunks]
 
             kwargs = {
                 'total': len(futures),
-                'unit': 'files',
+                'unit': 'chunks',
                 'unit_scale': True,
                 'leave': True
             }
+
             for f in tqdm(concurrent.futures.as_completed(futures), **kwargs):
                 pass
 
-    if normalize:
-        # Make parallel calls to normalize audio files
-        file_list = glob.glob(dataset_dir + os.sep + '.wav')
-        with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) \
-                as executor:
-            futures = [
-                executor.submit(fn=norm,
-                                audio_path=file_path,
-                                verbose_level=verbose_level)
-                for file_path in file_list]
+            for f in futures:
+                # Add file to temp_files:
+                temp_files.add(output_dir + os.sep + f.result())
+                # Add file to file_list to process again
+                file_list.append(output_dir + os.sep + f.result())
 
-            kwargs = {
-                'total': len(futures),
-                'unit': 'files',
-                'unit_scale': True,
-                'leave': True
-            }
-            for f in tqdm(concurrent.futures.as_completed(futures), **kwargs):
-                pass
+    # Remove temporary files:
+    temp_files.remove(file_list[0])
+    for file in temp_files:
+        try:
+            os.remove(file)
+        except FileNotFoundError:
+            print('[WARN] File not found:', file)
+
+    if name is not None:
+        if os.path.isfile(output_dir + os.sep + name + '.wav'):
+            if exist_ok:
+                os.remove(output_dir + os.sep + name + '.wav')
+            else:
+                raise FileExistsError
+        os.rename(file_list[0], output_dir + os.sep + name + '.wav')
 
 
-def norm(audio_path: str, verbose_level=0):
+def trim(input_file: str, output_path: str, trim_interval: int=5,
+         num_workers: int = None, verbose_level=0):
+    """
+    Trim an audio file.
+
+    This function will generated audio files with the original name of the file
+    + position which the audio begins and the duration in seconds of the audio
+    (for instance file_5.0_10.0.wav refers to an audio which original name is
+    'file', with 10 seconds of duration, and the start position begins at 5
+    seconds in the original file).
+
+    :param input_file: str
+        Path to the file to process.
+    :param output_path: str
+        Output path for the generated files.
+    :param trim_interval: tuple, shape=(start, end)
+        Trim audio. Default to None (no trim will be performed).
+    :param num_workers: int
+        The maximum number of processes that can be used to execute the tasks.
+    :param verbose_level: int
+        Verbosity level. See sox for more information.
+    """
+    prefix = input_file.split(os.sep)[-1][:-4]  # Get name and remove extension
+    audio = wave.open(input_file, 'r')
+    duration = audio.getnframes() / float(audio.getframerate())
+    audio.close()
+    trims = list(np.arange(0, duration, trim_interval))
+    # trims = list(zip(trims[0:len(trims) - 1], trims[1:len(trims)]))
+
+    # Make parallel calls to trim the audio file
+    with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) \
+            as executor:
+        futures = [
+            executor.submit(fn=trim_audio,
+                            audio_path=input_file,
+                            output_path=output_path,
+                            name=prefix + '_' + str(t) + '_' + str(duration),
+                            position=t,
+                            duration=trim_interval,
+                            verbose_level=verbose_level)
+            for t in trims]
+
+        kwargs = {
+            'total': len(futures),
+            'unit': 'files',
+            'unit_scale': True,
+            'leave': True
+        }
+        for f in tqdm(concurrent.futures.as_completed(futures), **kwargs):
+            pass
+
+
+def normalize(file_list: list, output_path :str, num_workers: int = None,
+              verbose_level=0):
+    """
+    Creates a normalized dataset.
+    This function will generated audio files with the original name of the file
+    + the prefix n_.
+
+    :param file_list: list
+        List of files to process (paths).
+    :param num_workers: int
+        The maximum number of processes that can be used to execute the tasks.
+    :param output_path: str
+        Output path for the generated files.
+    :param verbose_level: int
+        Verbosity level. See sox for more information.
+    """
+    if len(file_list) == 0:
+        raise ValueError('Not possible to process an empty list of files.')
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) \
+            as executor:
+        futures = [
+            executor.submit(fn=normalize_audio,
+                            audio_path=file_path,
+                            output_path=output_path,
+                            name='n_' + file_path.split(os.sep)[-1],
+                            verbose_level=verbose_level)
+            for file_path in file_list]
+
+        kwargs = {
+            'total': len(futures),
+            'unit': 'files',
+            'unit_scale': True,
+            'leave': True
+        }
+        for f in tqdm(concurrent.futures.as_completed(futures), **kwargs):
+            pass
+
+
+# Helper functions (necessary to use concurrent.futures)
+
+def concat_chunks(file_list: list, output_path: str, verbose_level=0) -> str:
+    """
+    Concat chunks of audio files using sox software.
+
+    For each chunk,
+
+    :param file_list: list
+        List of files to process.
+    :param output_path: str
+        Output path to the concatenated file.
+    :param verbose_level: int
+        Verbosity level. See sox for more information.
+
+    :return: str
+        The name of the concatenated file (useful to keep track of temporary
+        files).
+    """
+    temp_file_name = 'temp_' + str(len(file_list)) + \
+                     str(int(round(time.time() * 1000))) + '.wav'
+    files_str = ' '.join(file_list)
+    os.system('sox -V%s %s %s' % (verbose_level, files_str, output_path +
+                                  os.sep + temp_file_name))
+    return temp_file_name
+
+
+def normalize_audio(audio_path: str, output_path: str, name: str,
+                    verbose_level=0):
     """
     Normalizes an audio file using sox software.
 
     :param audio_path: str
         Path to the audio file.
+    :param output_path: str
+        Output path to the normalized audio.
+    :param name: str
+        Output name.
     :param verbose_level: int
-    Verbosity level. See sox for more information.
+        Verbosity level. See sox for more information.
     """
-    os.system('sox -V%s %s gain −n' % (verbose_level, audio_path))
+    os.system('sox -V%s %s --norm %s' % (verbose_level, audio_path,
+                                         output_path + os.sep + name))
 
 
-def trim(audio_path: str, output_path: str, start, end, verbose_level=0):
+def trim_audio(audio_path: str, output_path: str, name: str, position, duration,
+               verbose_level=0):
     """
     Trim audio files using sox software.
 
     :param audio_path: str
-        List of files to process (paths).
+        Path to the audio to trim.
     :param output_path: str
-        Output directory (data set).
-    :param start:
+        Output path to the trimmed audio.
+    :param name: str
+        Output name.
+    :param position:
         Start position to trim.
-    :param end:
-        End position to trim.
+    :param duration:
+        Duration in seconds
     :param verbose_level:
         Verbosity level. See sox for more information.
     """
-    os.system('sox -V%s %s %s %s %s' % (verbose_level, audio_path, start, end,
-                                        output_path))
+    os.system('sox -V%s %s %s.wav trim %s %s' % (verbose_level, audio_path,
+                                                 output_path + os.sep + name,
+                                                 position, duration))
 
 
 if __name__ == '__main__':
     # Command line arguments:
     parser = argparse.ArgumentParser(description='Generates a dataset of audio '
-                                                 'files in a proper format.')
-    parser.add_argument('source', help='Source directory.')
+                                                 'files in a proper format. '
+                                                 'This script will concatenate '
+                                                 'audio files, normalize the '
+                                                 'generated audio, and trim '
+                                                 'the audio to make a new '
+                                                 'dataset of audio files. '
+                                                 'To change this default '
+                                                 'behavior, select the tasks '
+                                                 'to execute (useful if the '
+                                                 'execution of the program is '
+                                                 'interrupted for some '
+                                                 'reason).')
+    parser.add_argument('corpus', help='Corpus information (JSON file)')
     parser.add_argument('output', help='Output directory.')
-    parser.add_argument('--seconds', help='Length of audio files in seconds.')
+    parser.add_argument('--concat', help='Concat audio files (source) '
+                                         'in a single file '
+                                         '(output/corpus_name).',
+                        action='store_true')
+    parser.add_argument('--trim', help='Trim audio files (output)',
+                        action='store_true')
+    parser.add_argument('--seconds', help='Time interval to trim audio files '
+                                          '(only for trim task).',
+                        default=5)
+    parser.add_argument('--normalize', help='Normalizes audio files (output).',
+                        action='store_true')
     parser.add_argument('--workers', help='Define how many process to run in '
-                                          'parallel.', default=4, type=int)
-    parser.add_argument('--v', help='Change verbosity level (sox output)',
-                        default=0)
+                                          'parallel.',
+                        default=4, type=int)
     parser.add_argument('--check', help='Check output directories ignoring '
                                         'files already processed.',
                         action='store_true')
+    parser.add_argument('--chunk_size', help='Chunk size to concat audio '
+                                             'files. The final result is the '
+                                             'same. This might change the '
+                                             'general performance of the '
+                                             'concatenation process (only for '
+                                             'concatenating task).',
+                        default=40, type=int)
+    parser.add_argument('--v', help='Change verbosity level (sox output)',
+                        default=0)
+
     os.makedirs('logs/scripts/', exist_ok=True)
 
     # Set arguments settings:
     arguments = parser.parse_args()
-    data_dir = arguments.source
+    data_dir = arguments.corpus
     output = arguments.output
     seconds = arguments.seconds
     workers = arguments.workers
     verbose = arguments.v
 
+    # Creating a dict to store which operations it will be performed.
+    perform_task = dict()
+    # The operations will be executed in the following order:
+    # - concat files from the path provided by the source (json) file
+    # - trim files
+    # - normalize files
+    # Each subsequent task needs to be performed after the previous task
+    # (no need to execute in a single program call though).
+    perform_task['concat'] = arguments.concat
+    perform_task['trim'] = arguments.trim
+    perform_task['normalize'] = arguments.normalize
+    if not perform_task['concat'] and not perform_task['trim'] and not \
+            perform_task['normalize']:
+        for task in perform_task:
+            perform_task[task] = True
+    perform_task['check'] = arguments.check
+
     # Load json info about bases
-    with open('bases_test.json') as base_json:
+    with open(data_dir) as base_json:
         bases_json = json.load(base_json)
 
     # The files will be processed as a new base by their language
@@ -249,7 +407,7 @@ if __name__ == '__main__':
         out_dir = output + os.sep + bases_json[base]['lang'] + os.sep
 
         # Check processed files if necessary, removing them
-        if arguments.check:
+        if perform_task['check']:
             files_paths = files_to_process(all_files_path, out_dir,
                                            contains_extension=True,
                                            is_base_name=False)
@@ -258,9 +416,6 @@ if __name__ == '__main__':
 
         # Append file paths to the respective language base
         files_list_lang[bases_json[base]['lang']] += files_paths
-
-    print('TOTAL FILES TO BE PROCESSED: %d' %
-          (sum(len(b) for b in files_list_lang.values())))
 
     # Print summaries:
     pandas_found = importlib.util.find_spec('pandas')
@@ -276,17 +431,53 @@ if __name__ == '__main__':
         d['Total samples'] = list(map(lambda x: len(files_list_lang[x]),
                                       files_list_lang))
         print('\nSUMMARY\n-------')
-        print(pd.DataFrame(d))
+        print(str(pd.DataFrame(d)))
 
-    # Process files of each language as a new base:
-    for base in files_list_lang:
-        print('[INFO] processing base in "%s"' % base)
+    if perform_task['concat']:
+        print('\n> CONCATENATING FILES')
+        print('TOTAL FILES TO BE PROCESSED: %d' %
+              (sum(len(b) for b in files_list_lang.values())))
+        for base in files_list_lang:
+            print('[INFO] processing base "%s"' % base)
 
-        # Call function and make data set
-        create_dataset(dataset_dir=output + os.sep + base,
-                       file_list=files_list_lang[base],
-                       num_workers=workers,
-                       verbose_level=verbose,
-                       name=base,
-                       exist_ok=True,
-                       trim_interval=seconds if seconds is not None else None)
+            # Call function and concat original corpus in a single file
+            concat(output_dir=output + os.sep + base,
+                   file_list=files_list_lang[base],
+                   num_workers=workers,
+                   verbose_level=verbose,
+                   name=base,
+                   exist_ok=True,
+                   chunk_size=arguments.chunk_size)
+
+    if perform_task['trim']:
+        # Update list of files to process
+        to_process = dict()
+        for base in files_list_lang:
+            to_process[base] = output + os.sep + base + os.sep + base + '.wav'
+        print('\n> TRIMMING AUDIO FILES')
+        for base in files_list_lang:
+            print('[INFO] processing base "%s"' % base)
+            # Call function and trim audio files
+            trim(input_file=to_process[base],
+                 output_path=output + os.sep + base,
+                 num_workers=workers,
+                 verbose_level=verbose,
+                 trim_interval=seconds)
+
+        # Remove old files:
+        for base in to_process:
+            os.remove(to_process[base])
+
+    if perform_task['normalize']:
+        # Update list of files to process
+        to_process = dict()
+        for base in files_list_lang:
+            os.makedirs(output + os.sep + base + '_normalized', exist_ok=True)
+            to_process[base] = glob.glob(output + os.sep + base + os.sep +
+                                         '*.wav')
+            print('\n> NORMALIZING FILES')
+            # Call function and normalize audio files
+            normalize(file_list=to_process[base],
+                      output_path=output + os.sep + base + '_normalized',
+                      num_workers=workers,
+                      verbose_level=verbose)
