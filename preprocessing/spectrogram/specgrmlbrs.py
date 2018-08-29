@@ -7,7 +7,7 @@ from librosa.display import specshow
 FIG_SIZE = None  # Default matplotlib.figure fig size handling
 
 
-def specgram_lbrs(audiopath: str, plotpath: str=None, name: str='tmp',
+def specgram_lbrs(audiopath: str, plotpath: str=None, name: str=None,
                   cmap: str='gray_r', algorithm='default', y_axis=None,
                   **kwargs):
     """
@@ -21,7 +21,7 @@ def specgram_lbrs(audiopath: str, plotpath: str=None, name: str='tmp',
     :param plotpath: string
         Path to plot the spectrogram. Default to the current working directory.
     :param name: string
-        Name of the output image.
+        Name of the output image. Default to audio name.
     :param cmap: string
         Automatic colormap detection
         See matplotlib.pyplot.pcolormesh.
@@ -73,6 +73,9 @@ def specgram_lbrs(audiopath: str, plotpath: str=None, name: str='tmp',
     librosa.display.specshow(spec_data, sr=sr, cmap=cmap, y_axis=y_axis)
     plt.axis('off')
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+
+    if name is None:
+        name = audiopath.split('/')[-1]
 
     if plotpath is not None:
         plt.savefig(plotpath + '/' + name + '.png')

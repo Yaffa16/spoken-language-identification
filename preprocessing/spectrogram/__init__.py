@@ -21,7 +21,7 @@ def _spectrogram(audiopath: str, plotpath: str, name: str, **kargs):
     raise NotImplementedError('Must implemented spectrogram function')
 
 
-def spectrogram(audiopath, plotpath, name, **kargs):
+def spectrogram(audiopath, plotpath, name, **kwargs):
     """
     Generate a spectrogram of an audio file using the default callable object.
 
@@ -33,8 +33,8 @@ def spectrogram(audiopath, plotpath, name, **kargs):
         Path to plot the spectrogram.
     :param name:
         Name of the output image.
-    :param kargs:
+    :param kwargs:
         Additional kwargs are passed on to the handler callable object.
     """
     DEFAULT_HANDLER_SPEC(audiopath=audiopath, plotpath=plotpath, name=name,
-                         kargs=kargs)
+                         kargs=kwargs)

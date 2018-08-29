@@ -9,7 +9,7 @@ More details in http://sox.sourceforge.net
 import os
 
 
-def specgram_sox(audiopath: str, plotpath: str=None, name: str='tmp',
+def specgram_sox(audiopath: str, plotpath: str=None, name: str=None,
                  effect_options='-m -r', **kwargs):
     """
     Generate a spectrogram of an audio file using the sox software.
@@ -32,11 +32,13 @@ def specgram_sox(audiopath: str, plotpath: str=None, name: str='tmp',
     """
     if plotpath is not None and not os.path.isdir(plotpath):
         os.makedirs(plotpath)
-    kwargs.setdefault('remix', '2')
     kwargs.setdefault('rate', '16k')
     global_options = ''
     for k in kwargs:
         global_options += ' ' + k + ' ' + kwargs[k]
+
+    if name is None:
+        name = audiopath.split('/')[-1]
 
     if plotpath is None:
         output = name + '.png'

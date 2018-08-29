@@ -1,6 +1,7 @@
 # Adapted | spoken-language-identification
 
-# TODO: document function params
+# todo: document function params
+# todo: check module, rewrite if necessary
 
 import os
 import numpy as np
@@ -10,15 +11,7 @@ from numpy.lib import stride_tricks
 
 
 def stft(sig, frame_size, overlap_fac=0.5, window=np.hanning):
-    """
-    Short time fourier transform of audio signal
-
-    :param sig:
-    :param frame_size:
-    :param overlap_fac:
-    :param window:
-    :return:
-    """
+    """Short time fourier transform of audio signal"""
     win = window(frame_size)
     hop_size = int(frame_size - np.floor(overlap_fac * frame_size))
 
@@ -41,16 +34,7 @@ def stft(sig, frame_size, overlap_fac=0.5, window=np.hanning):
 
 
 def logscale_spec(spec, sr=44100, alpha=1.0, f0=0.9, fmax=1):
-    """
-    Scale frequency axis logarithmically
-
-    :param spec:
-    :param sr:
-    :param alpha:
-    :param f0:
-    :param fmax:
-    :return:
-    """
+    """Scale frequency axis logarithmically"""
     spec = spec[:, 0:256]
     timebins, freqbins = np.shape(spec)
     scale = np.linspace(0, 1, freqbins)
@@ -92,20 +76,12 @@ def logscale_spec(spec, sr=44100, alpha=1.0, f0=0.9, fmax=1):
 
 def plotstft(audiopath: str, plotpath: str = None, name: str = 'tmp',
              binsize=2 ** 10, alpha=1):
-    """
-    Plot spectrogram using a short time fourier transform
-
-    :param audiopath: path to the audio file.
-    :param binsize:
-    :param plotpath:
-    :param name:
-    :param alpha:
-    :param offset:
-    """
+    """Plot spectrogram using a short time fourier transform"""
     samplerate, samples = wav.read(audiopath)
-    samples = samples[:, 0]
+    if len(samples.shape) > 1:  # Code to prevent 'too many indices for array'
+                                # exception.
+        samples = samples[:, 0]
     s = stft(samples, binsize)
-
 
     sshow, freq = logscale_spec(s, sr=samplerate, alpha=alpha)
     sshow = sshow[2:, :]
@@ -126,7 +102,7 @@ def plotstft(audiopath: str, plotpath: str = None, name: str = 'tmp',
         image.save(name + '.png')
 
 
-def specgram_dft(audiopath: str, plotpath: str=None, name: str='tmp', **kwargs):
+def specgram_dft(audiopath: str, plotpath: str=None, name: str=None, **kwargs):
     """
     Generate a spectrogram of an audio file using specgrmstft.plotstft function.
 
@@ -140,7 +116,13 @@ def specgram_dft(audiopath: str, plotpath: str=None, name: str='tmp', **kwargs):
         Name of the output image.
     :param kwargs:
         Additional kwargs are passed on to specgrmstft.plotstft function.
+
+    :Example:
+    # >>> from
     """
+    if name is None:
+        name = audiopath.split(os.sep)[-1]
+
     if plotpath is not None and not os.path.isdir(plotpath):
         os.makedirs(plotpath)
     plotstft(audiopath=audiopath, plotpath=plotpath, name=name, **kwargs)

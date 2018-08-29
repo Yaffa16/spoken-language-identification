@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def specgram_mtplt(audiopath: str, plotpath: str=None, name: str='tmp',
+def specgram_mtplt(audiopath: str, plotpath: str=None, name: str=None,
                    **kwargs):
     """
     Generate a spectrogram of an audio file using matplotlib.
@@ -22,7 +22,7 @@ def specgram_mtplt(audiopath: str, plotpath: str=None, name: str='tmp',
     """
     if plotpath is not None and not os.path.isdir(plotpath):
         os.makedirs(plotpath)
-    kwargs.setdefault('NFFT', 2 ** 10)
+    # kwargs.setdefault('NFFT', 2 ** 10)
     kwargs.setdefault('cmap', 'gray_r')
 
     wf = wave.open(audiopath, 'rb')
@@ -43,6 +43,9 @@ def specgram_mtplt(audiopath: str, plotpath: str=None, name: str='tmp',
     plt.specgram(audio[:, 0], Fs=fs, noverlap=0, **kwargs)
     plt.axis(ymin=0, ymax=12000)  # Note: trying to limit frequency range
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+
+    if name is None:
+        name = audiopath.split('/')[-1]
 
     if plotpath is not None:
         plt.savefig(plotpath + '/' + name + '.png')
