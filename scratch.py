@@ -9,12 +9,14 @@ from util.data.csv import CSVParser
 from keras import optimizers
 from keras.models import Sequential, Input, load_model
 from keras_tqdm import TQDMCallback
+from tqdm import tqdm
 from keras.layers import (Conv2D,
                           MaxPooling2D,
                           Dense,
                           Flatten,
                           Dropout,
-                          LSTM)
+                          LSTM,
+                          CuDNNLSTM)
 from keras.layers.normalization import BatchNormalization
 from keras.utils import to_categorical
 from keras.utils.vis_utils import plot_model
@@ -26,6 +28,7 @@ import numpy as np
 import tensorflow as tf
 import random
 import librosa
+import glob
 
 # todo: implement model in a module
 # todo: parse json files to get the hyper parameters
@@ -87,11 +90,11 @@ def conv():
     random.shuffle(paths_labels)
     paths, labels = zip(*paths_labels)
     X_train = np.asarray(paths[0:int(0.5 * len(paths))])
-    y_train = np.asarray(labels[0:int(0.5 * len(labels))])
-    X_test = np.asarray(paths[int(0.5 * 0.75):])
-    y_test = np.asarray(labels[int(0.5 * 0.75):])
+    y_train = np.asarray(labels[0:int(0.5 * len(paths))])
+    X_test = np.asarray(paths[int(0.5 * len(paths)):int(0.75 * len(paths))])
+    y_test = np.asarray(labels[int(0.5 * len(paths)):int(0.75 * len(paths))])
     X_val = np.asarray(paths[int(0.75 * len(paths)):])
-    y_val = np.asarray(labels[int(0.75 * len(labels)):])
+    y_val = np.asarray(labels[int(0.75 * len(paths)):])
     num_classes = np.unique(labels).shape[0]
 
     # Set up the labels
@@ -225,7 +228,7 @@ def conv():
 def lstm():
     # Model constants
 
-    input_shape = (height, width)
+    input_shape = None, 64, (height, width)  # todo: check input_shape, steps
 
     optimizer = optimizers.Adadelta()
 
@@ -233,7 +236,7 @@ def lstm():
 
     dropout_rate = 0.4
 
-    epochs = 5
+    epochs = 20
 
     # Set up the data
 
@@ -243,11 +246,11 @@ def lstm():
     random.shuffle(paths_labels)
     paths, labels = zip(*paths_labels)
     X_train = np.asarray(paths[0:int(0.5 * len(paths))])
-    y_train = np.asarray(labels[0:int(0.5 * len(labels))])
-    X_test = np.asarray(paths[int(0.5 * 0.75):])
-    y_test = np.asarray(labels[int(0.5 * 0.75):])
+    y_train = np.asarray(labels[0:int(0.5 * len(paths))])
+    X_test = np.asarray(paths[int(0.5 * len(paths)):int(0.75 * len(paths))])
+    y_test = np.asarray(labels[int(0.5 * len(paths)):int(0.75 * len(paths))])
     X_val = np.asarray(paths[int(0.75 * len(paths)):])
-    y_val = np.asarray(labels[int(0.75 * len(labels)):])
+    y_val = np.asarray(labels[int(0.75 * len(paths)):])
     num_classes = np.unique(labels).shape[0]
 
     # Set up the labels
@@ -277,13 +280,15 @@ def lstm():
     # Build model
 
     model = Sequential()
-    model.add(LSTM(400, return_sequences=True, input_shape=input_shape))
+    model.add(CuDNNLSTM(400, return_sequences=True, input_shape=input_shape,
+                        consume_less='cpu'))
     model.add(BatchNormalization())
-    model.add(LSTM(200, return_sequences=True, input_shape=input_shape))
+    model.add(CuDNNLSTM(200, return_sequences=True, input_shape=input_shape,
+                        consume_less='cpu'))
     model.add(BatchNormalization())
-    model.add(LSTM(100, return_sequences=False))
+    model.add(CuDNNLSTM(100, return_sequences=False, consume_less='cpu'))
     model.add(BatchNormalization())
-    model.add(Dense(3, activation='softmax'))
+    model.add(Dense(num_classes, activation='softmax'))
     sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='mean_squared_error',
                   optimizer=sgd, metrics=['accuracy'])
@@ -307,11 +312,101 @@ def lstm():
     model.save('models/scratch_model/lstm.h5')
     print('DONE')
 
-lstm_nfcc():
-    librosa.feature.mfcc
+
+def lstm_mfcc():
+    # Model constants
+
+    input_shape = None, 64, 20, 216
+
+    optimizer = optimizers.Adadelta()
+
+    batch_normalization = True
+
+    dropout_rate = 0.4
+
+    epochs = 20
+
+    # Set up the data
+    paths_en = glob.glob('data/mfcc_data/dataset_pt_es_en_1/en/*.npy')
+    paths_es = glob.glob('data/mfcc_data/dataset_pt_es_en_1/es/*.npy')
+    paths_pt = glob.glob('data/mfcc_data/dataset_pt_es_en_1/pt/*.npy')
+    paths = paths_en + paths_es + paths_pt
+
+    labels = []
+    labels += ['en' for i in range(len(paths_en))]
+    labels += ['pt' for i in range(len(paths_pt))]
+    labels += ['es' for i in range(len(paths_es))]
+    paths_labels = list(zip(paths, labels))
+    random.shuffle(paths_labels)
+    paths, labels = zip(*paths_labels)
+    X_train = np.asarray(paths[0:int(0.5 * len(paths))])
+    y_train = np.asarray(labels[0:int(0.5 * len(paths))])
+    X_test = np.asarray(paths[int(0.5 * len(paths)):int(0.75 * len(paths))])
+    y_test = np.asarray(labels[int(0.5 * len(paths)):int(0.75 * len(paths))])
+    X_val = np.asarray(paths[int(0.75 * len(paths)):])
+    y_val = np.asarray(labels[int(0.75 * len(paths)):])
+
+    num_classes = np.unique(labels).shape[0]
+    # Set up the labels
+    le = preprocessing.LabelEncoder()
+
+    le = preprocessing.LabelEncoder()
+    le.fit(np.unique(labels))
+
+    y_train = le.transform(y_train)
+    y_test = le.transform(y_test)
+    y_val = le.transform(y_val)
+    y_train = to_categorical(y_train, num_classes=num_classes)
+    y_test = to_categorical(y_test, num_classes=num_classes)
+    y_val = to_categorical(y_val, num_classes=num_classes)
+
+    # Load data
+    print('> Loading data...')
+    X_train_data = []
+    X_test_data = []
+    X_val_data = []
+    for fp in tqdm(X_train):
+        X_train_data.append(np.load(fp))
+    for fp in tqdm(X_test):
+        X_test_data.append(np.load(fp))
+    for fp in tqdm(X_val):
+        X_val_data.append(np.load(fp))
+    X_train = X_train_data
+    X_val = X_val_data
+    X_test = X_test_data
+    print('Done')
+    # Build model
+
+    model = Sequential()
+    model.add(CuDNNLSTM(400, return_sequences=True, input_shape=input_shape))
+    model.add(BatchNormalization())
+    model.add(CuDNNLSTM(200, return_sequences=True, input_shape=input_shape))
+    model.add(BatchNormalization())
+    model.add(CuDNNLSTM(100, return_sequences=False))
+    model.add(BatchNormalization())
+    model.add(Dense(num_classes, activation='softmax'))
+    sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='mean_squared_error',
+                  optimizer=sgd, metrics=['accuracy'])
+    model.compile(loss='mean_squared_error', optimizer='adam',
+                  metrics=['accuracy'])
+    print(model.summary())
+
+    es = keras.callbacks.EarlyStopping(monitor='loss', patience=1, verbose=1)
+
+    H = model.fit(x=X_train, y=y_train, validation_data=(X_val, y_val),
+                  epochs=epochs, callbacks=[es], verbose=1, batch_size=128)
+
+    score = model.evaluate(X_test, y_test, verbose=1)
+    print('Test loss:', score[0])
+    print('Test accuracy:', score[1])
+
+    print('[INFO] serializing network...')
+    model.save('models/scratch_model/lstm_mfcc.h5')
+    print('DONE')
 
 
 if __name__ == '__main__':
     # conv()
     # lstm()
-    # lstm_nfcc()
+    lstm_mfcc()
