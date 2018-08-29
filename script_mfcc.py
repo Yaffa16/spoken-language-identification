@@ -58,12 +58,12 @@ def files_to_process(files_list: list, output_dir: str,
         if contains_extension:
             ext = file_name.split('.')[-1]
             file_name = str(file_name[:-len(ext)-1])
-        if file_name + '.png' in output_files:
+        if file_name + '.npy' in output_files:
             remaining_files.remove(el)
             counter += 1
     print('There are {} files remaining to process, '
-          'and {} mfcc datain {}.'.format(len(files_list) - counter, counter,
-                                          output_dir))
+          'and {} mfcc data in {}.'.format(len(files_list) - counter, counter,
+                                           output_dir))
     return remaining_files
 
 
@@ -91,9 +91,6 @@ def process_files_in_parallel(data_path: str, output_path: str,
         return
     else:
         print('Processing files through function', fun.__name__, kwargs)
-    # for file_n in files_list:
-    #     fun(audiopath = data_path + os.sep + file_n, output_path = output_path,
-    #         name = file_n[:-4])
 
     with concurrent.futures.ProcessPoolExecutor(workers) \
             as executor:
@@ -112,7 +109,7 @@ def process_files_in_parallel(data_path: str, output_path: str,
         }
         for f in tqdm(concurrent.futures.as_completed(futures), **kwargs):
             pass
-        with open('logs/scripts/script_specs-exceptions.txt', 'a') as log:
+        with open('logs/scripts/script_mfcc-exceptions.txt', 'a') as log:
             log.write('\nExceptions for {} call at {}'.format(fun.__name__,
                                                               time.asctime()))
             for f in futures:
@@ -123,7 +120,7 @@ def process_files_in_parallel(data_path: str, output_path: str,
 # Helper functions (necessary to use concurrent.futures)
 
 def extract_and_save_mfcc(audio_path: str, output_path: str, name: str,
-                          **kwargs):
+                          duration: int, **kwargs):
     """
     Extract and save mfcc features of an audio file in a binary file in NumPy
     .npy format.
@@ -132,12 +129,13 @@ def extract_and_save_mfcc(audio_path: str, output_path: str, name: str,
         Path to the audio file.
     :param output_path: str
         Output path to save the file.
+     :param duration: int
+        Duration to load up each audio.
     :param name: str
         Output file name.
     :param kwargs: Additional kwargs are passed on to the librosa.load function.
     """
-    # print('--> test')
-    y, sr = librosa.load(audio_path, duration=5)
+    y, sr = librosa.load(audio_path, duration=duration)
     features = librosa.feature.mfcc(y, sr)
     np.save(file=output_path + os.sep + name, arr=features)
 
@@ -149,6 +147,8 @@ if __name__ == '__main__':
                                                  'features of wav audio files.')
     parser.add_argument('source', help='Source directory.')
     parser.add_argument('output', help='Output directory.')
+    parser.add_argument('--duration', help='Duration to load up each audio.',
+                        type=int, default=4)
     parser.add_argument('--workers', help='Define how many process to run in '
                                           'parallel.', default=4, type=int)
     parser.add_argument('--check', help='Check output directories ignoring '
@@ -164,6 +164,7 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
     data_dir = arguments.source
     output = arguments.output
+    dur = arguments.duration
 
     # Make directories
     os.makedirs(output, exist_ok=True)
@@ -179,7 +180,7 @@ if __name__ == '__main__':
 
     print('\n> PROCESSING')
     with Timer() as timer:
-        process_files_in_parallel(fun=extract_and_save_mfcc,
+        process_files_in_parallel(fun=extract_and_save_mfcc, duration=dur,
                                   files_list=files, data_path=data_dir,
                                   output_path=output, workers=arguments.workers)
 
@@ -189,6 +190,6 @@ if __name__ == '__main__':
         print("\n> CHECKING")
         files = files_to_process(files, output)
 
-        with open('logs/scripts/mfcc_remaining_files.txt', 'w') as file:
+        with open('logs/scripts/mfcc_remaining_files.csv', 'w') as file:
             for rem_file in files:
                 file.write('\n' + rem_file)
