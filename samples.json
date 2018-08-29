@@ -1,0 +1,16 @@
+{
+  "corpus_1": {
+    "path": "data/samples/corpus_1/",
+    "lang": "en",
+    "samples": "7",
+    "length": "unknown",
+    "format": "wav"
+  },
+  "corpus_2": {
+    "path": "data/samples/corpus_2/",
+    "lang": "pt",
+    "samples": "7",
+    "length": "unknown",
+    "format": "wav"
+  }
+}
