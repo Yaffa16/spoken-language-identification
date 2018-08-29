@@ -2,12 +2,12 @@
 towav: convert audio files to wav format
 
 Dependencies:
-- mpg123: this module uses the mpg123 software to convert audio files to wav
-format. Please be sure you have this software installed in your PATH system
-variable. More details in https://www.mpg123.de/index.shtml.
-- sox: this module uses the mpg123 software to convert audio files to wav
-format. Please be sure you have this software installed in your PATH system
-variable. More details in
+    - mpg123: this module uses the mpg123 software to convert audio files to wav
+    format. Please be sure you have this software installed in your PATH system
+    variable. More details in https://www.mpg123.de/index.shtml.
+    - sox: this module uses the sox software to convert audio files to wav
+    format. Please be sure you have this software installed in your PATH system
+    variable. More details in http://sox.sourceforge.net
 """
 
 import os
