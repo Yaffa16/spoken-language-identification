@@ -45,11 +45,11 @@ if __name__ == '__main__':
         file_path = str(line.split(',')[0])
         if len(file_path.split('.')) > 1:
             file_format = file_path.split('.')[-1]
-            file_name = file_path.split('.')[-2]
+            file_name = file_path[:-len(file_format)-1]
         else:
             continue
         try:
-            if wav_dir is None:
+            if wav_dir is None and file_format != 'wav':
                 wav_file_name = 'tmp.wav'
                 wav_dir = '.'
             else:

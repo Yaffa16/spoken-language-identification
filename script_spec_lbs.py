@@ -48,6 +48,7 @@ if __name__ == '__main__':
     wav_dir = args.wav_dir
     y_axis = args.y_axis
     alg = args.algorithm
+    specs_dir = args.specs_dir
 
     if file_names_path is None:
         file_names = os.listdir(data_dir)
@@ -58,21 +59,22 @@ if __name__ == '__main__':
         file_path = str(line.split(',')[0])
         if len(file_path.split('.')) > 1:
             file_format = file_path.split('.')[-1]
-            file_name = file_path.split('.')[-2]
+            file_name = file_path[:-len(file_format)-1]
         else:
             continue
         try:
-            if wav_dir is None:
+            if wav_dir is None and file_format != 'wav':
                 wav_file_name = 'tmp.wav'
                 wav_dir = '.'
             else:
                 wav_file_name = file_name + '.wav'
-
+                wav_dir = data_dir
             if file_format != 'wav':
                 sox_convert(file_path, wav_dir + os.sep + wav_file_name)
 
             specgram_lbrs(audiopath=wav_dir + os.sep + wav_file_name,
-                          name=file_name, y_axis=y_axis, algorithm=alg)
+                          plotpath=specs_dir, name=file_name, y_axis=y_axis,
+                          algorithm=alg)
 
             if wav_dir is None:
                 os.remove(wav_file_name)
