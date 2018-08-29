@@ -1,0 +1,7 @@
+script\_real\_time module
+=========================
+
+.. automodule:: script_real_time
+    :members:
+    :undoc-members:
+    :show-inheritance:

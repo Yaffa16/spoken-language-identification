@@ -1,0 +1,7 @@
+script\_spec\_plt module
+========================
+
+.. automodule:: script_spec_plt
+    :members:
+    :undoc-members:
+    :show-inheritance:

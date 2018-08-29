@@ -1,0 +1,7 @@
+script\_csv module
+==================
+
+.. automodule:: script_csv
+    :members:
+    :undoc-members:
+    :show-inheritance:

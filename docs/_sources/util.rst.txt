@@ -1,0 +1,47 @@
+util package
+============
+
+Subpackages
+-----------
+
+.. toctree::
+
+    util.audio
+    util.batching
+    util.data
+
+Submodules
+----------
+
+util.imgload module
+-------------------
+
+.. automodule:: util.imgload
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+util.timing module
+------------------
+
+.. automodule:: util.timing
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+util.towav module
+-----------------
+
+.. automodule:: util.towav
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: util
+    :members:
+    :undoc-members:
+    :show-inheritance:

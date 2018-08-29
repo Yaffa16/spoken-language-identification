@@ -1,0 +1,415 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>script_create_concatdt module &mdash; Spoken Language Identification 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Spoken Language Identification
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">script_create_concatdt module</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Spoken Language Identification</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>script_create_concatdt module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/script_create_concatdt.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-script_create_concatdt">
+<span id="script-create-concatdt-module"></span><h1>script_create_concatdt module<a class="headerlink" href="#module-script_create_concatdt" title="Permalink to this headline">¶</a></h1>
+<p>This script creates usable data sets for training. All data of the original
+bases will be concatenated before processing.</p>
+<dl class="docutils">
+<dt>Dependencies:</dt>
+<dd><ul class="first simple">
+<li>sox: this module uses the sox software to convert audio files to wav</li>
+</ul>
+<p class="last">format. Please be sure you have this software installed in your PATH system
+variable. More details in <a class="reference external" href="http://sox.sourceforge.net">http://sox.sourceforge.net</a></p>
+</dd>
+</dl>
+<dl class="function">
+<dt id="script_create_concatdt.concat">
+<code class="descclassname">script_create_concatdt.</code><code class="descname">concat</code><span class="sig-paren">(</span><em>file_list: list</em>, <em>output_dir: str</em>, <em>chunk_size: int = 40</em>, <em>num_workers: int = None</em>, <em>name: str = None</em>, <em>exist_ok=False</em>, <em>verbose_level=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/script_create_concatdt.html#concat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#script_create_concatdt.concat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concat a list of audio files in one file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>file_list</strong> – list
+List of files to process (paths).</li>
+<li><strong>output_dir</strong> – str
+Output directory.</li>
+<li><strong>chunk_size</strong> – int
+Chunk size to concat audio files. The final result is the same. This
+can change the general performance of the concatenation process.</li>
+<li><strong>name</strong> – Output name (concatenated audio).</li>
+<li><strong>num_workers</strong> – int
+The maximum number of processes that can be used to execute the tasks.</li>
+<li><strong>exist_ok</strong> – bool
+If the target name already exists, raise an FileExistsError if exist_ok
+is False. Otherwise the file will be replaced.</li>
+<li><strong>verbose_level</strong> – int
+Verbosity level. See sox for more information.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="script_create_concatdt.concat_chunks">
+<code class="descclassname">script_create_concatdt.</code><code class="descname">concat_chunks</code><span class="sig-paren">(</span><em>file_list: list</em>, <em>output_path: str</em>, <em>verbose_level=0</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/script_create_concatdt.html#concat_chunks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#script_create_concatdt.concat_chunks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concat chunks of audio files using sox software.</p>
+<p>For each chunk,</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>file_list</strong> – list
+List of files to process.</li>
+<li><strong>output_path</strong> – str
+Output path to the concatenated file.</li>
+<li><strong>verbose_level</strong> – int
+Verbosity level. See sox for more information.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">str
+The name of the concatenated file (useful to keep track of temporary
+files).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="script_create_concatdt.files_to_process">
+<code class="descclassname">script_create_concatdt.</code><code class="descname">files_to_process</code><span class="sig-paren">(</span><em>files_list: list</em>, <em>output_dir: str</em>, <em>contains_extension=True</em>, <em>is_base_name=True</em><span class="sig-paren">)</span> &#x2192; list<a class="reference internal" href="_modules/script_create_concatdt.html#files_to_process"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#script_create_concatdt.files_to_process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a list of remaining files to process.</p>
+<p>This function checks the data set integrity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>files_list</strong> – list
+The original list of file names to process.
+Only names is considered by default (is_base_name=True).</li>
+<li><strong>output_dir</strong> – str
+The path of the data set (output directory).</li>
+<li><strong>contains_extension</strong> – bool
+Must be True if the file names contains file extensions (for instance
+file.wav). Default to True.</li>
+<li><strong>is_base_name</strong> – bool
+Consider the provided list of files as a list of names. If you provide
+a list of paths, set this as False. Default to True.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list
+A list containing the remaining files to process (in the format of the
+provided list).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="script_create_concatdt.normalize">
+<code class="descclassname">script_create_concatdt.</code><code class="descname">normalize</code><span class="sig-paren">(</span><em>file_list: list</em>, <em>output_path: str</em>, <em>num_workers: int = None</em>, <em>verbose_level=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/script_create_concatdt.html#normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#script_create_concatdt.normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a normalized dataset.
+This function will generated audio files with the original name of the file
++ the prefix <a href="#id1"><span class="problematic" id="id2">n_</span></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>file_list</strong> – list
+List of files to process (paths).</li>
+<li><strong>num_workers</strong> – int
+The maximum number of processes that can be used to execute the tasks.</li>
+<li><strong>output_path</strong> – str
+Output path for the generated files.</li>
+<li><strong>verbose_level</strong> – int
+Verbosity level. See sox for more information.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="script_create_concatdt.normalize_audio">
+<code class="descclassname">script_create_concatdt.</code><code class="descname">normalize_audio</code><span class="sig-paren">(</span><em>audio_path: str</em>, <em>output_path: str</em>, <em>name: str</em>, <em>verbose_level=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/script_create_concatdt.html#normalize_audio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#script_create_concatdt.normalize_audio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalizes an audio file using sox software.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>audio_path</strong> – str
+Path to the audio file.</li>
+<li><strong>output_path</strong> – str
+Output path to the normalized audio.</li>
+<li><strong>name</strong> – str
+Output name.</li>
+<li><strong>verbose_level</strong> – int
+Verbosity level. See sox for more information.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="script_create_concatdt.trim">
+<code class="descclassname">script_create_concatdt.</code><code class="descname">trim</code><span class="sig-paren">(</span><em>input_file: str</em>, <em>output_path: str</em>, <em>trim_interval: int = 5</em>, <em>num_workers: int = None</em>, <em>verbose_level=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/script_create_concatdt.html#trim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#script_create_concatdt.trim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trim an audio file.</p>
+<p>This function will generated audio files with the original name of the file
++ position which the audio begins and the duration in seconds of the audio
+(for instance file_5.0_10.0.wav refers to an audio which original name is
+‘file’, with 10 seconds of duration, and the start position begins at 5
+seconds in the original file).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>input_file</strong> – str
+Path to the file to process.</li>
+<li><strong>output_path</strong> – str
+Output path for the generated files.</li>
+<li><strong>trim_interval</strong> – tuple, shape=(start, end)
+Trim audio. Default to None (no trim will be performed).</li>
+<li><strong>num_workers</strong> – int
+The maximum number of processes that can be used to execute the tasks.</li>
+<li><strong>verbose_level</strong> – int
+Verbosity level. See sox for more information.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="script_create_concatdt.trim_audio">
+<code class="descclassname">script_create_concatdt.</code><code class="descname">trim_audio</code><span class="sig-paren">(</span><em>audio_path: str</em>, <em>output_path: str</em>, <em>name: str</em>, <em>position</em>, <em>duration</em>, <em>verbose_level=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/script_create_concatdt.html#trim_audio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#script_create_concatdt.trim_audio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trim audio files using sox software.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>audio_path</strong> – str
+Path to the audio to trim.</li>
+<li><strong>output_path</strong> – str
+Output path to the trimmed audio.</li>
+<li><strong>name</strong> – str
+Output name.</li>
+<li><strong>position</strong> – Start position to trim.</li>
+<li><strong>duration</strong> – Duration in seconds</li>
+<li><strong>verbose_level</strong> – Verbosity level. See sox for more information.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Lucas Rafael Gris.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

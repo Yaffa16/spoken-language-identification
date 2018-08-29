@@ -1,0 +1,369 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>util.batching package &mdash; Spoken Language Identification 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Spoken Language Identification
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">util.batching package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-util.batching.generator">util.batching.generator module</a></li>
+<li><a class="reference internal" href="#module-util.batching.generator_">util.batching.generator_ module</a></li>
+<li><a class="reference internal" href="#module-util.batching">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Spoken Language Identification</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>util.batching package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/util.batching.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="util-batching-package">
+<h1>util.batching package<a class="headerlink" href="#util-batching-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-util.batching.generator">
+<span id="util-batching-generator-module"></span><h2>util.batching.generator module<a class="headerlink" href="#module-util.batching.generator" title="Permalink to this headline">¶</a></h2>
+<p>This module implements a data generator utility based on the
+keras.utils.Sequence</p>
+<p>A good usage of this module is in the fit_generator method of Keras library.</p>
+<dl class="class">
+<dt id="util.batching.generator.Generator">
+<em class="property">class </em><code class="descclassname">util.batching.generator.</code><code class="descname">Generator</code><span class="sig-paren">(</span><em>paths</em>, <em>labels</em>, <em>batch_size: int</em>, <em>loader_fn: callable = None</em>, <em>pre_process_fn: callable = None</em>, <em>shuffle: bool = True</em>, <em>balance_samples=False</em>, <em>**loader_kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/util/batching/generator.html#Generator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#util.batching.generator.Generator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">keras.utils.data_utils.Sequence</span></code></p>
+<p>A generator which provides batches of data</p>
+<dl class="attribute">
+<dt id="util.batching.generator.Generator.labels">
+<code class="descname">labels</code><a class="headerlink" href="#util.batching.generator.Generator.labels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list containing the labels of each instance of data</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="util.batching.generator.Generator.loader">
+<code class="descname">loader</code><span class="sig-paren">(</span><em>source_path: str</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/util/batching/generator.html#Generator.loader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#util.batching.generator.Generator.loader" title="Permalink to this definition">¶</a></dt>
+<dd><p>A loader of data. Must implement a loader for correct operation of the
+buffer.</p>
+<p>A loader accepts the source path of the file and returns the read data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>source_path</strong> – str
+The path of the source to load.</li>
+<li><strong>args</strong> – (optional)
+Additional args can be passed on to the loader function.</li>
+<li><strong>kwargs</strong> – (optional)
+Additional kwargs can be passed on to internal function behavior.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The read object.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="util.batching.generator.Generator.on_epoch_end">
+<code class="descname">on_epoch_end</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/util/batching/generator.html#Generator.on_epoch_end"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#util.batching.generator.Generator.on_epoch_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method called at the end of every epoch.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="util.batching.generator.Generator.paths">
+<code class="descname">paths</code><a class="headerlink" href="#util.batching.generator.Generator.paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list containing the paths of data files</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="util.batching.generator.Generator.size">
+<code class="descname">size</code><a class="headerlink" href="#util.batching.generator.Generator.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the total quantity of original data</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-util.batching.generator_">
+<span id="id1"></span><h2>util.batching.generator_ module<a class="headerlink" href="#module-util.batching.generator_" title="Permalink to this headline">¶</a></h2>
+<p>This module implements a generator utility for batching purposes. With large
+amounts of data, it is possible to batch data asynchronous.</p>
+<p>A good usage of this module is in the fit_generator method of Keras library.</p>
+<p>.:see keras fit_generator method.</p>
+<dl class="class">
+<dt id="util.batching.generator_.Generator">
+<em class="property">class </em><code class="descclassname">util.batching.generator_.</code><code class="descname">Generator</code><span class="sig-paren">(</span><em>paths</em>, <em>labels</em>, <em>batch_size: int</em>, <em>loader_fn: callable = None</em>, <em>pre_process_fn: callable = None</em>, <em>shuffle: bool = True</em>, <em>balance_samples=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/util/batching/generator_.html#Generator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#util.batching.generator_.Generator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A generator which provides batches of data</p>
+<dl class="method">
+<dt id="util.batching.generator_.Generator.generator">
+<code class="descname">generator</code><span class="sig-paren">(</span><em>) -&gt; (&lt;class 'numpy.ndarray'&gt;</em>, <em>&lt;class 'numpy.ndarray'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/util/batching/generator_.html#Generator.generator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#util.batching.generator_.Generator.generator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the generator.</p>
+<p>If the pre processing function was provided, each batch will
+be passed through the pre processing function before returning.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(numpy.ndarray, numpy.ndarray)
+Tuple of arrays. The first array represents the data, and the
+second represents the labels.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p># &gt;&gt;&gt;</p>
+<p>data available, only the read amount will be returned.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="util.batching.generator_.Generator.labels">
+<code class="descname">labels</code><a class="headerlink" href="#util.batching.generator_.Generator.labels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list containing the labels of each instance of data</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="util.batching.generator_.Generator.loader">
+<code class="descname">loader</code><span class="sig-paren">(</span><em>source_path: str</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/util/batching/generator_.html#Generator.loader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#util.batching.generator_.Generator.loader" title="Permalink to this definition">¶</a></dt>
+<dd><p>A loader of data. Must implement a loader for correct operation of the
+buffer.</p>
+<p>A loader accepts the source path of the file and returns the read data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>source_path</strong> – str
+The path of the source to load.</li>
+<li><strong>args</strong> – (optional)
+Additional args can be passed on to the loader function.</li>
+<li><strong>kwargs</strong> – (optional)
+Additional kwargs can be passed on to internal function behavior.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The read object.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="util.batching.generator_.Generator.paths">
+<code class="descname">paths</code><a class="headerlink" href="#util.batching.generator_.Generator.paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list containing the paths of data files</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="util.batching.generator_.Generator.remaining">
+<code class="descname">remaining</code><a class="headerlink" href="#util.batching.generator_.Generator.remaining" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the amount of files remaining to be buffered.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="util.batching.generator_.Generator.size">
+<code class="descname">size</code><a class="headerlink" href="#util.batching.generator_.Generator.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the total quantity of original data</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-util.batching">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-util.batching" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Lucas Rafael Gris.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

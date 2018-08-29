@@ -1,0 +1,7 @@
+script\_spec\_lbs module
+========================
+
+.. automodule:: script_spec_lbs
+    :members:
+    :undoc-members:
+    :show-inheritance:

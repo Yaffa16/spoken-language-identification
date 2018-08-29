@@ -1,0 +1,493 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>preprocessing package &mdash; Spoken Language Identification 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Spoken Language Identification
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">preprocessing package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#preprocessing-augmentdata-module">preprocessing.augmentdata module</a></li>
+<li><a class="reference internal" href="#module-preprocessing.effects">preprocessing.effects module</a></li>
+<li><a class="reference internal" href="#module-preprocessing">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Spoken Language Identification</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>preprocessing package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/preprocessing.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="preprocessing-package">
+<h1>preprocessing package<a class="headerlink" href="#preprocessing-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preprocessing.spectrogram.html">preprocessing.spectrogram package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preprocessing.spectrogram.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocessing.spectrogram.html#module-preprocessing.spectrogram.specgrmdft">preprocessing.spectrogram.specgrmdft module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocessing.spectrogram.html#module-preprocessing.spectrogram.specgrmlbrs">preprocessing.spectrogram.specgrmlbrs module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocessing.spectrogram.html#module-preprocessing.spectrogram.specgrmsox">preprocessing.spectrogram.specgrmsox module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocessing.spectrogram.html#module-preprocessing.spectrogram.specgrmtplt">preprocessing.spectrogram.specgrmtplt module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocessing.spectrogram.html#module-preprocessing.spectrogram">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="preprocessing-augmentdata-module">
+<h2>preprocessing.augmentdata module<a class="headerlink" href="#preprocessing-augmentdata-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-preprocessing.effects">
+<span id="preprocessing-effects-module"></span><h2>preprocessing.effects module<a class="headerlink" href="#module-preprocessing.effects" title="Permalink to this headline">¶</a></h2>
+<p>This module implements some audio effects generators.</p>
+<dl class="class">
+<dt id="preprocessing.effects.Effect">
+<em class="property">class </em><code class="descclassname">preprocessing.effects.</code><code class="descname">Effect</code><span class="sig-paren">(</span><em>signal: util.audio.audiosignal.AudioSignal</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Effect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Effect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents an audio effect.</p>
+<dl class="method">
+<dt id="preprocessing.effects.Effect.apply">
+<code class="descname">apply</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Effect.apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Effect.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Must apply the implemented effect on the signal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>args</strong> – Additional args are passed on to the implemented effect.</li>
+<li><strong>kwargs</strong> – Additional kwargs are passed on to the function which generates the
+noise.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="preprocessing.effects.Effect.help">
+<em class="property">classmethod </em><code class="descname">help</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Effect.help"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Effect.help" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="preprocessing.effects.Effect.signal">
+<code class="descname">signal</code><a class="headerlink" href="#preprocessing.effects.Effect.signal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the respective signal of this effect</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="preprocessing.effects.Effect.write_audio">
+<code class="descname">write_audio</code><span class="sig-paren">(</span><em>path: str = ''</em>, <em>name: str = None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Effect.write_audio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Effect.write_audio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Must write the signal in a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> – str
+Name of the output file. Default could be the signal name.</li>
+<li><strong>path</strong> – str
+Path of the output file. Default could be the path of the
+AudioSignal. Default to nothing, that is, the audio will be saved
+based on the behavior of the handler function, usually, the
+current working folder.</li>
+<li><strong>args</strong> – Additional args could be passed on to the implemented write
+function.</li>
+<li><strong>kwargs</strong> – Additional kwargs could be passed on to the internal handle which
+writes the file.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="preprocessing.effects.Noise">
+<em class="property">class </em><code class="descclassname">preprocessing.effects.</code><code class="descname">Noise</code><span class="sig-paren">(</span><em>signal: util.audio.audiosignal.AudioSignal</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#preprocessing.effects.Effect" title="preprocessing.effects.Effect"><code class="xref py py-class docutils literal notranslate"><span class="pre">preprocessing.effects.Effect</span></code></a></p>
+<p>Represents an applicable noise effect to an signal</p>
+<dl class="method">
+<dt id="preprocessing.effects.Noise.apply">
+<code class="descname">apply</code><span class="sig-paren">(</span><em>noise: str = 'white'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Noise.apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Noise.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies a noise effect on the signal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>noise</strong> – str or array with noise to apply to.
+Type of noise. Default to ‘white’ to generate a white noise.
+See Noise.available_noises to see a list of the implemented
+noises.</li>
+<li><strong>kwargs</strong> – Additional kwargs are passed on to the noise generator function.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="preprocessing.effects.Noise.available_noises">
+<code class="descname">available_noises</code><em class="property"> = ['white']</em><a class="headerlink" href="#preprocessing.effects.Noise.available_noises" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="preprocessing.effects.Noise.help">
+<em class="property">classmethod </em><code class="descname">help</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Noise.help"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Noise.help" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="preprocessing.effects.Noise.white_noise">
+<em class="property">static </em><code class="descname">white_noise</code><span class="sig-paren">(</span><em>shape: tuple</em>, <em>factor: float = 0.1</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/preprocessing/effects.html#Noise.white_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Noise.white_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a random white_noise</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>shape</strong> – tuple (len=2)
+The shape of the generated noise.</li>
+<li><strong>factor</strong> – A factor to increase or decrease the amplitude of the generated
+noise.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">numpy.ndarray shape=(shape)
+Returns the generated noise with the provided parameters.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="preprocessing.effects.Noise.write_audio">
+<code class="descname">write_audio</code><span class="sig-paren">(</span><em>path: str = ''</em>, <em>name: str = None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Noise.write_audio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Noise.write_audio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the signal in a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> – str
+Name of the output file. Default to the signal name.</li>
+<li><strong>path</strong> – str
+Path of the output file. Default to nothing, the file will be saved
+in the current working folder.</li>
+<li><strong>kwargs</strong> – Additional kwargs are passed on to scipy.io.wavfile.write function.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="preprocessing.effects.Normalize">
+<em class="property">class </em><code class="descclassname">preprocessing.effects.</code><code class="descname">Normalize</code><span class="sig-paren">(</span><em>signal: util.audio.audiosignal.AudioSignal</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#preprocessing.effects.Effect" title="preprocessing.effects.Effect"><code class="xref py py-class docutils literal notranslate"><span class="pre">preprocessing.effects.Effect</span></code></a></p>
+<p>Represents an applicable normalize effect to an signal</p>
+<dl class="method">
+<dt id="preprocessing.effects.Normalize.apply">
+<code class="descname">apply</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Normalize.apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Normalize.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies a normalize effect on the signal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kwargs</strong> – Additional kwargs are ignored.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="preprocessing.effects.Normalize.help">
+<em class="property">classmethod </em><code class="descname">help</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Normalize.help"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Normalize.help" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="preprocessing.effects.Normalize.write_audio">
+<code class="descname">write_audio</code><span class="sig-paren">(</span><em>path: str = ''</em>, <em>name: str = None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Normalize.write_audio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Normalize.write_audio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the signal in a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> – str
+Name of the output file. Default to the signal name.</li>
+<li><strong>path</strong> – str
+Path of the output file. Default to nothing, the file will be saved
+in the current working folder.</li>
+<li><strong>kwargs</strong> – Additional kwargs are passed on to AudioSegment.export method.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="preprocessing.effects.Trim">
+<em class="property">class </em><code class="descclassname">preprocessing.effects.</code><code class="descname">Trim</code><span class="sig-paren">(</span><em>signal: util.audio.audiosignal.AudioSignal</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Trim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Trim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#preprocessing.effects.Effect" title="preprocessing.effects.Effect"><code class="xref py py-class docutils literal notranslate"><span class="pre">preprocessing.effects.Effect</span></code></a></p>
+<p>Represents an applicable trim effect to an signal</p>
+<dl class="method">
+<dt id="preprocessing.effects.Trim.apply">
+<code class="descname">apply</code><span class="sig-paren">(</span><em>start_time: int = 0</em>, <em>end_time: int = None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Trim.apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Trim.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies a trim effect on the signal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>start_time</strong> – int
+Start time in seconds. Default to 0.</li>
+<li><strong>end_time</strong> – int
+End time in seconds. Default to None (end of audio).</li>
+<li><strong>kwargs</strong> – Additional kwargs are ignored.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="preprocessing.effects.Trim.help">
+<em class="property">classmethod </em><code class="descname">help</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Trim.help"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Trim.help" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="preprocessing.effects.Trim.write_audio">
+<code class="descname">write_audio</code><span class="sig-paren">(</span><em>path: str = ''</em>, <em>name: str = None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/effects.html#Trim.write_audio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.effects.Trim.write_audio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the signal in a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> – str
+Name of the output file. Default to the signal name.</li>
+<li><strong>path</strong> – str
+Path of the output file. Default to nothing, the file will be saved
+in the current working folder.</li>
+<li><strong>kwargs</strong> – Additional kwargs are passed on to AudioSegment.export method.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-preprocessing">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-preprocessing" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Lucas Rafael Gris.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

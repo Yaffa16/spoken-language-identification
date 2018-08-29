@@ -1,0 +1,391 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>preprocessing.spectrogram package &mdash; Spoken Language Identification 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Spoken Language Identification
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">preprocessing.spectrogram package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-preprocessing.spectrogram.specgrmdft">preprocessing.spectrogram.specgrmdft module</a></li>
+<li><a class="reference internal" href="#module-preprocessing.spectrogram.specgrmlbrs">preprocessing.spectrogram.specgrmlbrs module</a></li>
+<li><a class="reference internal" href="#module-preprocessing.spectrogram.specgrmsox">preprocessing.spectrogram.specgrmsox module</a></li>
+<li><a class="reference internal" href="#module-preprocessing.spectrogram.specgrmtplt">preprocessing.spectrogram.specgrmtplt module</a></li>
+<li><a class="reference internal" href="#module-preprocessing.spectrogram">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Spoken Language Identification</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>preprocessing.spectrogram package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/preprocessing.spectrogram.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="preprocessing-spectrogram-package">
+<h1>preprocessing.spectrogram package<a class="headerlink" href="#preprocessing-spectrogram-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-preprocessing.spectrogram.specgrmdft">
+<span id="preprocessing-spectrogram-specgrmdft-module"></span><h2>preprocessing.spectrogram.specgrmdft module<a class="headerlink" href="#module-preprocessing.spectrogram.specgrmdft" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="preprocessing.spectrogram.specgrmdft.logscale_spec">
+<code class="descclassname">preprocessing.spectrogram.specgrmdft.</code><code class="descname">logscale_spec</code><span class="sig-paren">(</span><em>spec</em>, <em>sr=44100</em>, <em>alpha=1.0</em>, <em>f0=0.9</em>, <em>fmax=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/spectrogram/specgrmdft.html#logscale_spec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.spectrogram.specgrmdft.logscale_spec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scale frequency axis logarithmically</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="preprocessing.spectrogram.specgrmdft.plotstft">
+<code class="descclassname">preprocessing.spectrogram.specgrmdft.</code><code class="descname">plotstft</code><span class="sig-paren">(</span><em>audiopath: str</em>, <em>plotpath: str = None</em>, <em>name: str = 'tmp'</em>, <em>binsize=1024</em>, <em>alpha=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/spectrogram/specgrmdft.html#plotstft"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.spectrogram.specgrmdft.plotstft" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot spectrogram using a short time fourier transform</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="preprocessing.spectrogram.specgrmdft.specgram_dft">
+<code class="descclassname">preprocessing.spectrogram.specgrmdft.</code><code class="descname">specgram_dft</code><span class="sig-paren">(</span><em>audiopath: str</em>, <em>plotpath: str = None</em>, <em>name: str = None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/spectrogram/specgrmdft.html#specgram_dft"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.spectrogram.specgrmdft.specgram_dft" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a spectrogram of an audio file using specgrmstft.plotstft function.</p>
+<p>The output will be in png format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>audiopath</strong> – string
+Path of the audio file.</li>
+<li><strong>plotpath</strong> – string
+Path to plot the spectrogram. Default to the current working directory.</li>
+<li><strong>name</strong> – string
+Name of the output image.</li>
+<li><strong>kwargs</strong> – Additional kwargs are passed on to specgrmstft.plotstft function.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p># &gt;&gt;&gt; from</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="preprocessing.spectrogram.specgrmdft.stft">
+<code class="descclassname">preprocessing.spectrogram.specgrmdft.</code><code class="descname">stft</code><span class="sig-paren">(</span><em>sig</em>, <em>frame_size</em>, <em>overlap_fac=0.5</em>, <em>window=&lt;function hanning&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/spectrogram/specgrmdft.html#stft"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.spectrogram.specgrmdft.stft" title="Permalink to this definition">¶</a></dt>
+<dd><p>Short time fourier transform of audio signal</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-preprocessing.spectrogram.specgrmlbrs">
+<span id="preprocessing-spectrogram-specgrmlbrs-module"></span><h2>preprocessing.spectrogram.specgrmlbrs module<a class="headerlink" href="#module-preprocessing.spectrogram.specgrmlbrs" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="preprocessing.spectrogram.specgrmlbrs.specgram_lbrs">
+<code class="descclassname">preprocessing.spectrogram.specgrmlbrs.</code><code class="descname">specgram_lbrs</code><span class="sig-paren">(</span><em>audiopath: str</em>, <em>plotpath: str = None</em>, <em>name: str = None</em>, <em>cmap: str = 'gray_r'</em>, <em>algorithm='default'</em>, <em>y_axis=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/spectrogram/specgrmlbrs.html#specgram_lbrs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.spectrogram.specgrmlbrs.specgram_lbrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a spectrogram of an audio file using librosa.display.specshow
+function.</p>
+<p>The output will be in png format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>audiopath</strong> – string
+Path of the audio file.</li>
+<li><strong>plotpath</strong> – string
+Path to plot the spectrogram. Default to the current working directory.</li>
+<li><strong>name</strong> – string
+Name of the output image. Default to audio name.</li>
+<li><strong>cmap</strong> – string
+Automatic colormap detection
+See matplotlib.pyplot.pcolormesh.</li>
+<li><strong>algorithm</strong> (<em>str</em><em> or </em><em>callable</em>) – Algorithm to use to compute the spectrogram.
+Available algorithms: ‘default’, ‘mel’, ‘log’.
+The ‘default’ mode uses the librosa.stft function to compute the
+spectrogram data, the ‘mel’ uses the librosa.feature.melspectrogram
+function and ‘log’ uses librosa.cqt function.
+Expected return type of the algorithm: np.ndarray [shape=(Any, t)]</li>
+<li><strong>y_axis</strong> – None or str.
+Range for the y-axes. This parameter is passed to the
+librosa.display.specshow function.</li>
+<li><strong>kwargs</strong> – Additional kwargs are passed on to the defined algorithm function.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-preprocessing.spectrogram.specgrmsox">
+<span id="preprocessing-spectrogram-specgrmsox-module"></span><h2>preprocessing.spectrogram.specgrmsox module<a class="headerlink" href="#module-preprocessing.spectrogram.specgrmsox" title="Permalink to this headline">¶</a></h2>
+<p>specgrmsox: generate spectrogram using sox software</p>
+<p>This module uses the “‘sox’” software to generate spectrogram of audio files.
+Please be sure you have this software installed in your PATH system variable.
+More details in <a class="reference external" href="http://sox.sourceforge.net">http://sox.sourceforge.net</a></p>
+<dl class="function">
+<dt id="preprocessing.spectrogram.specgrmsox.specgram_sox">
+<code class="descclassname">preprocessing.spectrogram.specgrmsox.</code><code class="descname">specgram_sox</code><span class="sig-paren">(</span><em>audiopath: str</em>, <em>plotpath: str = None</em>, <em>name: str = None</em>, <em>effect_options='-m -r'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/spectrogram/specgrmsox.html#specgram_sox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.spectrogram.specgrmsox.specgram_sox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a spectrogram of an audio file using the sox software.</p>
+<p>The output will be in png format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>audiopath</strong> – string
+Path of the audio file.</li>
+<li><strong>plotpath</strong> – string
+Path to plot the spectrogram. Default to the current working directory.</li>
+<li><strong>name</strong> – string
+Name of the output image.</li>
+<li><strong>effect_options</strong> – string
+Sox effect options. Default: -m for monochromatic settings and -r to
+suppress the display of axes and legends.</li>
+<li><strong>kargs</strong> – Additional kargs are passed on to global options at sox command line
+arguments. Default to [(‘remix’, ‘2’), (‘rate’, ‘16k’)].</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-preprocessing.spectrogram.specgrmtplt">
+<span id="preprocessing-spectrogram-specgrmtplt-module"></span><h2>preprocessing.spectrogram.specgrmtplt module<a class="headerlink" href="#module-preprocessing.spectrogram.specgrmtplt" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="preprocessing.spectrogram.specgrmtplt.specgram_mtplt">
+<code class="descclassname">preprocessing.spectrogram.specgrmtplt.</code><code class="descname">specgram_mtplt</code><span class="sig-paren">(</span><em>audiopath: str</em>, <em>plotpath: str = None</em>, <em>name: str = None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/spectrogram/specgrmtplt.html#specgram_mtplt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.spectrogram.specgrmtplt.specgram_mtplt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a spectrogram of an audio file using matplotlib.</p>
+<p>The output will be in png format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>audiopath</strong> – string
+Path of the audio file.</li>
+<li><strong>plotpath</strong> – string
+Path to plot the spectrogram. Default to the current working directory.</li>
+<li><strong>name</strong> – string
+Name of the output image.</li>
+<li><strong>kwargs</strong> – Additional kwargs are passed on to matplotlib.pyplot.specgram function.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-preprocessing.spectrogram">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-preprocessing.spectrogram" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="preprocessing.spectrogram.spectrogram">
+<code class="descclassname">preprocessing.spectrogram.</code><code class="descname">spectrogram</code><span class="sig-paren">(</span><em>audiopath</em>, <em>plotpath</em>, <em>name</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessing/spectrogram.html#spectrogram"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#preprocessing.spectrogram.spectrogram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a spectrogram of an audio file using the default callable object.</p>
+<p>The output will be in png format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>audiopath</strong> – Path of the audio file.</li>
+<li><strong>plotpath</strong> – Path to plot the spectrogram.</li>
+<li><strong>name</strong> – Name of the output image.</li>
+<li><strong>kwargs</strong> – Additional kwargs are passed on to the handler callable object.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Lucas Rafael Gris.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

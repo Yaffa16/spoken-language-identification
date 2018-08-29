@@ -1,0 +1,389 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>script_mfcc &mdash; Spoken Language Identification 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Spoken Language Identification
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Spoken Language Identification</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>script_mfcc</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for script_mfcc</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This script generates mfcc data of wav audio files using parallel processing.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># todo: ignore large files</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="k">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">util.timing</span> <span class="k">import</span> <span class="n">Timer</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">concurrent.futures</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">librosa</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<div class="viewcode-block" id="files_to_process"><a class="viewcode-back" href="../script_mfcc.html#script_mfcc.files_to_process">[docs]</a><span class="k">def</span> <span class="nf">files_to_process</span><span class="p">(</span><span class="n">files_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                     <span class="n">contains_extension</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_base_name</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a list of remaining files to process.</span>
+
+<span class="sd">    This function checks the output directories searching for generated</span>
+<span class="sd">    spectrogram images.</span>
+
+<span class="sd">    :param files_list: list</span>
+<span class="sd">        The original list of file names to process.</span>
+<span class="sd">        Only names is considered by default (is_base_name=True).</span>
+<span class="sd">    :param output_dir: str</span>
+<span class="sd">        The path of the data set (output directory).</span>
+<span class="sd">    :param contains_extension: bool</span>
+<span class="sd">        Must be True if the file names contains file extensions (for instance</span>
+<span class="sd">        file.wav). Default to True.</span>
+<span class="sd">    :param is_base_name: bool</span>
+<span class="sd">        Consider the provided list of files as a list of names. If you provide</span>
+<span class="sd">        a list of paths, set this as False. Default to True.</span>
+
+<span class="sd">    :return: list</span>
+<span class="sd">        A list containing the remaining files to process (in the format of the</span>
+<span class="sd">        provided list).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Make a copy of the list</span>
+    <span class="n">remaining_files</span> <span class="o">=</span> <span class="n">files_list</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checking files in&#39;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">)</span>
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># List the output files in the directory</span>
+    <span class="n">output_files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+
+    <span class="c1"># Iterate over file names and eliminate from this_files if the respective</span>
+    <span class="c1"># spectrogram already exists.</span>
+    <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">files_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_base_name</span><span class="p">:</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="n">el</span>
+        <span class="k">if</span> <span class="n">contains_extension</span><span class="p">:</span>
+            <span class="n">ext</span> <span class="o">=</span> <span class="n">file_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_name</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">file_name</span> <span class="o">+</span> <span class="s1">&#39;.npy&#39;</span> <span class="ow">in</span> <span class="n">output_files</span><span class="p">:</span>
+            <span class="n">remaining_files</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+            <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;There are </span><span class="si">{}</span><span class="s1"> files remaining to process, &#39;</span>
+          <span class="s1">&#39;and </span><span class="si">{}</span><span class="s1"> mfcc datain </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">files_list</span><span class="p">)</span> <span class="o">-</span> <span class="n">counter</span><span class="p">,</span> <span class="n">counter</span><span class="p">,</span>
+                                          <span class="n">output_dir</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">remaining_files</span></div>
+
+
+<div class="viewcode-block" id="process_files_in_parallel"><a class="viewcode-back" href="../script_mfcc.html#script_mfcc.process_files_in_parallel">[docs]</a><span class="k">def</span> <span class="nf">process_files_in_parallel</span><span class="p">(</span><span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                              <span class="n">files_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">fun</span><span class="p">:</span> <span class="n">callable</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                              <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Process files in parallel, calling the provided function.</span>
+
+<span class="sd">    :param data_path: str</span>
+<span class="sd">        Source of audio files.</span>
+<span class="sd">    :param output_path: str</span>
+<span class="sd">        Output directory for plot images.</span>
+<span class="sd">    :param files_list: list</span>
+<span class="sd">        List of files to process.</span>
+<span class="sd">    :param fun:</span>
+<span class="sd">        A function to call.</span>
+<span class="sd">    :param workers: int</span>
+<span class="sd">        The maximum number of processes that can be used to execute the given</span>
+<span class="sd">        calls</span>
+<span class="sd">    :param kwargs:</span>
+<span class="sd">        Additional kwargs are passed on to the callable object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">files_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Processing files through function&#39;</span><span class="p">,</span> <span class="n">fun</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">workers</span><span class="p">)</span> \
+            <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="n">futures</span> <span class="o">=</span> <span class="p">[</span><span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">fn</span><span class="o">=</span><span class="n">fun</span><span class="p">,</span>
+                                   <span class="n">audio_path</span><span class="o">=</span><span class="n">data_path</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span> <span class="o">+</span> <span class="n">file_n</span><span class="p">,</span>
+                                   <span class="n">output_path</span><span class="o">=</span><span class="n">output_path</span><span class="p">,</span>
+                                   <span class="n">name</span><span class="o">=</span><span class="n">file_n</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">],</span>
+                                   <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                   <span class="k">for</span> <span class="n">file_n</span> <span class="ow">in</span> <span class="n">files_list</span><span class="p">]</span>
+
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;total&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">futures</span><span class="p">),</span>
+            <span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="s1">&#39;files&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;unit_scale&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">&#39;leave&#39;</span><span class="p">:</span> <span class="kc">True</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;logs/scripts/script_mfcc-exceptions.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">log</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Exceptions for </span><span class="si">{}</span><span class="s1"> call at </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fun</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                                              <span class="n">time</span><span class="o">.</span><span class="n">asctime</span><span class="p">()))</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">futures</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">exception</span><span class="p">()))</span></div>
+
+
+<span class="c1"># Helper functions (necessary to use concurrent.futures)</span>
+
+<div class="viewcode-block" id="extract_and_save_mfcc"><a class="viewcode-back" href="../script_mfcc.html#script_mfcc.extract_and_save_mfcc">[docs]</a><span class="k">def</span> <span class="nf">extract_and_save_mfcc</span><span class="p">(</span><span class="n">audio_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                          <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract and save mfcc features of an audio file in a binary file in NumPy</span>
+<span class="sd">    .npy format.</span>
+
+<span class="sd">    :param audio_path: str</span>
+<span class="sd">        Path to the audio file.</span>
+<span class="sd">    :param output_path: str</span>
+<span class="sd">        Output path to save the file.</span>
+<span class="sd">    :param name: str</span>
+<span class="sd">        Output file name.</span>
+<span class="sd">    :param kwargs: Additional kwargs are passed on to the librosa.load function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y</span><span class="p">,</span> <span class="n">sr</span> <span class="o">=</span> <span class="n">librosa</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">audio_path</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="n">librosa</span><span class="o">.</span><span class="n">feature</span><span class="o">.</span><span class="n">mfcc</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">output_path</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">features</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">warnoptions</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Command line arguments:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;Generate binary array files&#39;</span>
+                                                 <span class="s1">&#39;of the extracted mfcc &#39;</span>
+                                                 <span class="s1">&#39;features of wav audio files.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;source&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Source directory.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Output directory.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--workers&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Define how many process to run in &#39;</span>
+                                          <span class="s1">&#39;parallel.&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--check&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Check output directories ignoring &#39;</span>
+                                        <span class="s1">&#39;files already processed.&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--check_after&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Check output directories &#39;</span>
+                                              <span class="s1">&#39;after processing files and save &#39;</span>
+                                              <span class="s1">&#39;a list of failed files.&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s1">&#39;logs/scripts/&#39;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Set source and output directories:</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="n">data_dir</span> <span class="o">=</span> <span class="n">arguments</span><span class="o">.</span><span class="n">source</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">arguments</span><span class="o">.</span><span class="n">output</span>
+
+    <span class="c1"># Make directories</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">data_dir</span><span class="p">)</span>
+
+    <span class="c1"># Check processed files to ignore them</span>
+    <span class="k">if</span> <span class="n">arguments</span><span class="o">.</span><span class="n">check</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&gt; CHECKING&quot;</span><span class="p">)</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="n">files_to_process</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="n">files</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&gt; PROCESSING&#39;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">timer</span><span class="p">:</span>
+        <span class="n">process_files_in_parallel</span><span class="p">(</span><span class="n">fun</span><span class="o">=</span><span class="n">extract_and_save_mfcc</span><span class="p">,</span>
+                                  <span class="n">files_list</span><span class="o">=</span><span class="n">files</span><span class="p">,</span> <span class="n">data_path</span><span class="o">=</span><span class="n">data_dir</span><span class="p">,</span>
+                                  <span class="n">output_path</span><span class="o">=</span><span class="n">output</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">workers</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WORK DONE, total taken time: </span><span class="si">%.03f</span><span class="s1"> sec.&#39;</span> <span class="o">%</span> <span class="n">timer</span><span class="o">.</span><span class="n">interval</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">arguments</span><span class="o">.</span><span class="n">check_after</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&gt; CHECKING&quot;</span><span class="p">)</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="n">files_to_process</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;logs/scripts/mfcc_remaining_files.csv&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">rem_file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">rem_file</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Lucas Rafael Gris.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

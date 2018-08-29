@@ -1,0 +1,46 @@
+util.data package
+=================
+
+Submodules
+----------
+
+util.data.buffer module
+-----------------------
+
+.. automodule:: util.data.buffer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+util.data.csv module
+--------------------
+
+.. automodule:: util.data.csv
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+util.data.hdf5 module
+---------------------
+
+.. automodule:: util.data.hdf5
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+util.data.pipeline module
+-------------------------
+
+.. automodule:: util.data.pipeline
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: util.data
+    :members:
+    :undoc-members:
+    :show-inheritance:

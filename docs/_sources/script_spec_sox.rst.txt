@@ -1,0 +1,7 @@
+script\_spec\_sox module
+========================
+
+.. automodule:: script_spec_sox
+    :members:
+    :undoc-members:
+    :show-inheritance:

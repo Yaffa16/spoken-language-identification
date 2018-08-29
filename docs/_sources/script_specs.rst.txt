@@ -1,0 +1,7 @@
+script\_specs module
+====================
+
+.. automodule:: script_specs
+    :members:
+    :undoc-members:
+    :show-inheritance:
