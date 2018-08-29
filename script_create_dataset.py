@@ -157,7 +157,7 @@ if __name__ == '__main__':
     # Command line arguments:
     parser = argparse.ArgumentParser(description='Generates a dataset of audio '
                                                  'files in a proper format.')
-    parser.add_argument('source', help='Source directory.')
+    parser.add_argument('corpus', help='Corpus information (JSON file)')
     parser.add_argument('output', help='Output directory.')
     parser.add_argument('--seconds', help='Length of audio files in seconds.')
     parser.add_argument('--workers', help='Define how many process to run in '
@@ -191,7 +191,7 @@ if __name__ == '__main__':
         log_remaining = None
 
     # Load json info about bases
-    with open('corpus.json') as base_json:
+    with open(data_dir) as base_json:
         bases_json = json.load(base_json)
 
     # The files will be processed as a new base by their language
