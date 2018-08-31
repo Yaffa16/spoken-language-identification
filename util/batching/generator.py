@@ -16,7 +16,8 @@ class Generator(keras.utils.Sequence):
 
     def __init__(self, paths, labels, batch_size: int,
                  loader_fn: callable = None, pre_process_fn: callable = None,
-                 shuffle: bool = True, balance_samples=False, **loader_kw):
+                 shuffle: bool = True, expected_shape: tuple=None,
+                 not_found_ok=False, **loader_kw):
         """
         Initializes a generator.
 
@@ -44,16 +45,20 @@ class Generator(keras.utils.Sequence):
         :param shuffle: bool
             If true, shuffle the paths before loading them.
 
-        :param balance_samples: bool
-            If True, balance data to be representative. Default to False, no
-            balancing will be applied, and the data will be considered as it is.
+        :param expected_shape: tuple
+            Check if the shape of each loaded data is in a proper format. If
+            not, the data will be ignored.
 
-            Note: When balancing the data, the number os data and labels tends
-            to decrease because the extra instances of some classes will be
-            removed.
+        :param not_found_ok: bool
+            If false, will raise a FileNotFoundError, if true,  will ignore
+            not found files. Default to false.
 
         :param loader_kw: Additional kwargs to be passed on to the loader
             function.
+
+        Note: if a expected_shape is provided or not_found_ok is True, the
+        __getitem__ method will load a random instance to avoid raising
+        exceptions.
         """
 
         self._paths = paths
@@ -61,20 +66,10 @@ class Generator(keras.utils.Sequence):
         self._pre_process_fn = pre_process_fn
         self._batch_size = batch_size
         self._loaderkw = loader_kw
+        self._not_found_ok = not_found_ok
+        self._expected_shape = expected_shape
         if loader_fn is not None:
             self.loader = loader_fn
-
-        if balance_samples:
-            dataset = list(zip(self._paths, self._labels))
-            unique, counts = numpy.unique(self._labels, return_counts=True)
-            max_n_instances = min(counts)
-            paths_per_label = dict()
-            for label in unique:
-                paths_per_label[label] = list(map(lambda d: d[1] == label,
-                                                  dataset))
-            self._paths = []
-            for label in paths_per_label:
-                self._paths.append(paths_per_label[label][:max_n_instances])
 
         if shuffle:
             dataset = list(zip(self._paths, self._labels))
@@ -101,6 +96,10 @@ class Generator(keras.utils.Sequence):
         raise NotImplementedError('Loader not implemented. Must implement '
                                   'a loader for correct operation.')
 
+    def _get_random_instance(self):
+        i = numpy.random.randint(0, len(self._paths))
+        return self._paths[i], self._labels[i]
+
     def __getitem__(self, index) -> (numpy.ndarray, numpy.ndarray):
         """
         Gets a batch of data.
@@ -109,7 +108,7 @@ class Generator(keras.utils.Sequence):
             Tuple of arrays. The first array represents the data, and the
             second represents the labels.
 
-        .. note: in case the size of the batch is greater than the amount of
+        Note: in case the size of the batch is greater than the amount of
         data available, only the read amount will be returned.
         """
         # Generate indexes of the batch
@@ -117,11 +116,57 @@ class Generator(keras.utils.Sequence):
                             ((index+1)*self._batch_size)]
         labels = self._labels[(index*self._batch_size):
                               ((index+1)*self._batch_size)]
+        paths_and_labels = list(zip(paths, labels))
         # Fill batches
-        data = list(map(lambda p: self.loader(p, **self._loaderkw), paths))
+        x = []
+        y = []
+        threshold = 0
+        for path_label in paths_and_labels:
+            if self._not_found_ok:
+                try:
+                    # Try to load the data
+                    x.append(self.loader(path_label[0], **self._loaderkw))
+                    y.append(path_label[1])
+                except FileNotFoundError:
+                    # If not found, append a new path to load
+                    p, l = self._get_random_instance()
+                    paths_and_labels.append((p, l))
+                    # Increase a threshold value to avoid infinite loops
+                    threshold += 1
+
+                    # If all data was tried to be read, raise an exception
+                    if threshold == self._batch_size:
+                        # (threshold can be any value)
+                        raise RuntimeError(
+                            'Threshold value reached. Error when '
+                            'trying to read the files provided '
+                            '(not able to fill the batch).')
+                    continue
+            else:  # Read data without handling the exception
+                y.append(path_label[1])
+                x.append(self.loader(path_label[0], **self._loaderkw))
+
+            if self._expected_shape is not None and x[-1].shape != \
+                    self._expected_shape:
+                # If the last read data is not in the expected shape
+                p, l = self._get_random_instance()
+                paths_and_labels.append((p, l))
+                # Increase a threshold value to avoid infinite loops
+                threshold += 1
+                # Remove the last instance
+                x.pop()
+                y.pop()
+
+                # If all data was tried to be read, raise an exception
+                if threshold == self._batch_size:
+                    raise RuntimeError('Threshold value reached. Error when '
+                                       'trying to read the files provided '
+                                       '(not able to fill the batch).')
+                continue
+
         if self._pre_process_fn is not None:
-            data = self._pre_process_fn(data)
-        return numpy.asarray(data), numpy.asarray(labels)
+            x = self._pre_process_fn(x)
+        return numpy.asarray(x), numpy.asarray(y)
 
     def __len__(self):
         """Denotes the number of batches per epoch"""
