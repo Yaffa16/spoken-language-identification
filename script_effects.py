@@ -26,7 +26,7 @@ if __name__ == '__main__':
                         nargs='*')
     parser.add_argument('--d', help='Show detailed information (documentation) '
                                     'and exit.', action='store_true')
-    # TODO: record option
+    # todo: record option
 
     args = parser.parse_args()
     if args.d:
@@ -44,6 +44,8 @@ if __name__ == '__main__':
     if args.effect_options is not None:
         kwargs = dict(args.effect_options[i:i+2]
                       for i in range(0, len(args.effect_options), 2))
+    else:
+        kwargs = dict()
 
     with Timer() as timer:
         for f_name in file_paths:
