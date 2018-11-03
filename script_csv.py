@@ -40,5 +40,8 @@ if __name__ == '__main__':
                                        recursive=True)
             else:
                 file_paths = glob.glob(path + '/*.' + data_format)
+            if len(file_paths) == 0:
+                print('Not found. Check the path and format provided. '
+                      'Arguments provided:', args)
             for file_path in file_paths:
                 csv_file.write(file_path + ',' + label + '\n')
