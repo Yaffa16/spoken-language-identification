@@ -135,7 +135,7 @@ def extract_and_save_mfcc(audio_path: str, output_path: str, name: str,
         Output file name.
     :param kwargs: Additional kwargs are passed on to the librosa.load function.
     """
-    y, sr = librosa.load(audio_path, duration=duration)
+    y, sr = librosa.load(audio_path, duration=duration, **kwargs)
     features = librosa.feature.mfcc(y, sr)
     np.save(file=output_path + os.sep + name, arr=features)
 
