@@ -1,16 +1,23 @@
 {
-  "corpus_1": {
-    "path": "data/samples/corpus_1/",
+  "en": {
+    "path": "data/raw/samples/en/",
     "lang": "en",
-    "samples": "7",
+    "samples": "unknown",
     "length": "unknown",
-    "format": "wav"
+    "format": "unknown"
   },
-  "corpus_2": {
-    "path": "data/samples/corpus_2/",
+  "pt": {
+    "path": "data/raw/samples/pt/",
     "lang": "pt",
-    "samples": "7",
+    "samples": "unknown",
     "length": "unknown",
-    "format": "wav"
-  }
+    "format": "unknown"
+  },
+  "es": {
+    "path": "data/raw/samples/es/",
+    "lang": "es",
+    "samples": "unknown",
+    "length": "unknown",
+    "format": "unknown"
+   }
 }
