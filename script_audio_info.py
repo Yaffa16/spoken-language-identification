@@ -75,7 +75,7 @@ def append_csv(files_path, output_file, base_name=None,
     :return:
     """
     print('[INFO] extracting info from audio files')
-    with open(output_file, 'w') as file:
+    with open(output_file, 'a') as file:
         header = 'Corpus,Input File,Channels,Sample Rate,Precision, Duration,' \
                  'File Size,Bit Rate,Sample Encoding'
         header += str(',' + append_command[0] if append_command is not None
@@ -100,11 +100,11 @@ def append_csv(files_path, output_file, base_name=None,
 
 if __name__ == '__main__':
     # Command line arguments:
-    parser = argparse.ArgumentParser(description='Get more information about '
-                                                 'bases.')
+    parser = argparse.ArgumentParser(description='Get information about '
+                                                 'audio files (corpus).')
     parser.add_argument('corpus', help='Corpus information (JSON file) or '
                                        'path.')
-    parser.add_argument('output', help='Output path for CSV report file.')
+    parser.add_argument('output', help='Output path for the CSV report file.')
     parser.add_argument('--append_length', help='Appends a duration column. '
                                                 'The overall command returns '
                                                 'the duration of the audio '
