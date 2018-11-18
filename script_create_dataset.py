@@ -63,10 +63,6 @@ def files_to_process(files_list: list, output_dir: str,
         if file_name + '.wav' in output_files:
             remaining_files.remove(el)
             counter += 1
-        # if file_name not in duplicates:
-        #     duplicates.add(file_name)
-        # else:
-        #     print('DUPLICATE: ', file_name)
     print('There are {} files remaining to process, '
           'and {} files in {}.'.format(len(files_list) - counter, counter,
                                        output_dir))
@@ -91,9 +87,8 @@ def create_dataset(dataset_dir: str, file_list: list, num_workers: int=None,
     :param kwargs:
         Additional kwargs are passed on to the pre processing function.
     """
-
     os.makedirs(dataset_dir, exist_ok=True)
-    print('[INFO] creating data set [%s]' % dataset_dir)
+    print('[INFO] creating dataloader set [%s]' % dataset_dir)
 
     # Set handler function to process each file
     handler = pre_processing if pre_processing is not None else copyfile
@@ -103,7 +98,7 @@ def create_dataset(dataset_dir: str, file_list: list, num_workers: int=None,
             handler(file_path, dataset_dir, **kwargs)
         return
 
-    # Process data in parallel
+    # Process dataloader in parallel
     with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as \
             executor:
         futures = [executor.submit(handler, file_path, dataset_dir, **kwargs)
@@ -128,7 +123,8 @@ def create_dataset(dataset_dir: str, file_list: list, num_workers: int=None,
 
 def pre_process(file_path: str, output_dir: str, name: str=None,
                 min_length: int=0, trim_interval: tuple=None, normalize=True,
-                rate: int=None, extra_sox_args: str=None, verbose_level=0):
+                trim_silence_threshold: float=None, rate: int=None,
+                extra_sox_args: str=None, verbose_level=0):
     """
     Pre process a file. Use this function to handle raw datasets.
 
@@ -145,6 +141,9 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
         Trim audio. Default to None (no trim will be performed).
     :param normalize: bool
         Normalizes audio.
+    :param trim_silence_threshold: float.
+        Threshold value to trim silence from audio. Default to None, no trim
+        will be performed.
     :param rate: int
         Sets the rate of output file. Default to None (no conversion will be
         performed).
@@ -153,14 +152,20 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
     :param verbose_level: int
         Verbosity level. See sox for more information.
     """
+    # Todo: modularize features and rewrite this function
     if min_length > 0:
         process = subprocess.Popen('soxi -D ' + file_path,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)
         stdout, stderr = process.communicate()
-        audio_length = float(stdout.decode(sys.stdout.encoding))
+        try:
+            audio_length = float(stdout.decode(sys.stdout.encoding))
+        except ValueError as error:
+            if str(verbose_level) == '2':
+                print(error, file_path)
+            return
+
         expected_length = trim_interval[1]
-        # print('->', audio_length, expected_length, min_length)
         if audio_length < min_length or (trim_interval is not None and
                                          trim_interval[0] +
                                          expected_length > audio_length):
@@ -168,6 +173,29 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
             # required or if the interval provided is not in the necessary range
             # to make a trim.
             return
+
+    if trim_silence_threshold is not None:
+        temp_file_path = output_dir + os.sep + \
+                         file_path.split(os.sep)[-1].split('.')[-2] + '.wav'
+        cmd = 'sox -V' + str(verbose_level) + ' ' + file_path + ' ' \
+              + temp_file_path + \
+              ' silence 1 0.1 {}% -1 0.1 {}%'.format(trim_silence_threshold,
+                                                     trim_silence_threshold)
+        os.system(cmd)
+        pre_process(file_path=temp_file_path,
+                    output_dir=output_dir,
+                    name=name,
+                    min_length=min_length,
+                    trim_interval=trim_interval,
+                    normalize=normalize,
+                    trim_silence_threshold=None,
+                    rate=rate,
+                    extra_sox_args=extra_sox_args,
+                    verbose_level=verbose_level)
+        if os.path.isfile(temp_file_path):
+            os.remove(temp_file_path)
+        return
+
     cmd = 'sox -V' + str(verbose_level) + ' ' + file_path
     if name is None:
         name = file_path.split(os.sep)[-1].split('.')[-2] + '_' + \
@@ -193,8 +221,8 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
     if rate is not None:
         # Get the current rate
         process = subprocess.Popen('soxi -r ' + file_path,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT)
         stdout, stderr = process.communicate()
         current_rate = float(stdout.decode(sys.stdout.encoding))
         # Convert the sample rate
@@ -231,6 +259,12 @@ if __name__ == '__main__':
     parser.add_argument('output', help='Output directory.')
     parser.add_argument('--seconds', help='Length of audio files in seconds.',
                         type=int)
+    parser.add_argument('--trim_silence', help='Volume threshold to trim '
+                                               'silence from audio files. '
+                                               'Default to 0, no trim will be '
+                                               'performed. '
+                                               'Recommended values: 1 - 5',
+                        type=float, default=0)
     parser.add_argument('--rate', help='Set the output rate of audio files.')
     parser.add_argument('--workers', help='Define how many process to run in '
                                           'parallel.', default=4, type=int)
@@ -247,6 +281,10 @@ if __name__ == '__main__':
                                                'trimming audio files in '
                                                'different positions.',
                         action='store_true')
+    parser.add_argument('--limit', help='Set a limit of files to process. '
+                                        'Useful when the data is unbalanced '
+                                        'and the process is slow.',
+                        type=int)
     parser.add_argument('--v', help='Change verbosity level (sox output)',
                         default=0)
 
@@ -259,6 +297,8 @@ if __name__ == '__main__':
     output_rate = arguments.rate
     workers = arguments.workers
     verbose = arguments.v
+    limit = arguments.limit
+    trim_silence = arguments.trim_silence
 
     # Enable logging the remaining files with just check option.
     if arguments.just_check:
@@ -278,6 +318,10 @@ if __name__ == '__main__':
     # Get a list of files in each language
     for base in bases_json:
         print('\n[INFO] getting a list of files of base "%s"' % base)
+        if bases_json[base]['format'] not in ['wav', 'mp3', 'sph', 'flac',
+                                              'aiff', 'ogg', 'aac', 'wma']:
+            print('[WARN] unknown format of base')
+            bases_json[base]['format'] = '*'
 
         # Get a list of all files (paths) to process
         all_files_path = glob.glob(bases_json[base]['path'] + '/**/*.' +
@@ -311,9 +355,13 @@ if __name__ == '__main__':
         # Append file paths to the respective language base
         files_list_lang[new_base_name] += files_paths
 
+    if limit is not None:
+        print('[INFO] Limiting amount of files to process')
+        for files_list in files_list_lang:
+            files_list_lang[files_list] = files_list_lang[files_list][:limit]
+
     print('TOTAL FILES TO BE PROCESSED: %d' %
           (sum(len(b) for b in files_list_lang.values())))
-
     # Print summaries:
     pandas_found = importlib.util.find_spec('pandas')
     if pandas_found is not None:
@@ -343,10 +391,12 @@ if __name__ == '__main__':
         # this would be making the trims considering the audio length, but this
         # approach is good for now.
         if augment_data and seconds is not None:
-            trims = 4
+            trims = 8
         else:
             trims = 1
         for d in range(0, trims, 2):
+            print('[INFO] operation {} of {}'.format(int(d/2),
+                                                     int(trims/2 - 1)))
             create_dataset(dataset_dir=output + os.sep + base,
                            file_list=files_list_lang[base],
                            num_workers=workers,
@@ -354,5 +404,6 @@ if __name__ == '__main__':
                            verbose_level=verbose,
                            min_length=seconds if seconds is not None else 0,
                            rate=output_rate,
+                           trim_silence_threshold=trim_silence,
                            trim_interval=(0 + d, seconds)
                            if seconds is not None else None)
