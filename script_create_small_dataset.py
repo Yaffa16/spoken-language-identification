@@ -6,7 +6,6 @@ import random
 import os
 import glob
 import string
-import argparse
 from shutil import copyfile
 
 
@@ -42,6 +41,7 @@ def create_dataset(n_instances: int, output_dir: str, files_paths: list,
 
 
 if __name__ == '__main__':
+    import argparse
     import json
     # Command line arguments:
     parser = argparse.ArgumentParser(description='Generates a small dataset '
