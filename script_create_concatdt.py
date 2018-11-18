@@ -1,5 +1,5 @@
 """
-This script creates usable data sets for training. All data of the original
+This script creates usable dataloader sets for training. All dataloader of the original
 bases will be concatenated before processing.
 
 Dependencies:
@@ -7,6 +7,7 @@ Dependencies:
     format. Please be sure you have this software installed in your PATH system
     variable. More details in http://sox.sourceforge.net
 """
+
 import concurrent.futures
 import os
 import numpy as np
@@ -19,7 +20,7 @@ from util import syscommand
 
 
 def update_list_fixing(file_list: list, num_workers: int,
-                       output_path_fixed_files: str= 'temp',
+                       output_path_fixed_files: str='temp',
                        target_rate: int=16000, channels=1, output_path=None,
                        min_duration: int=None, verbose_level=0):
     """
@@ -107,7 +108,8 @@ def update_list_fixing(file_list: list, num_workers: int,
 
 def concat(file_list: list, output_dir: str, chunk_size: int=40,
            num_workers: int=None, name: str=None, rate=None,
-           min_duration: int=None, exist_ok=False, verbose_level=0):
+           trim_silence_threshold: float=0, min_duration: int=None,
+           exist_ok=False, verbose_level=0):
     """
     Concat a list of audio files in one file.
 
@@ -131,9 +133,13 @@ def concat(file_list: list, output_dir: str, chunk_size: int=40,
     :param exist_ok: bool
         If the target name already exists, raise an FileExistsError if exist_ok
         is False. Otherwise the file will be replaced.
+    :param trim_silence_threshold: float.
+        Threshold value to trim silence from audio. Default to None, no trim
+        will be performed.
     :param verbose_level: int
         Verbosity level. See sox for more information.
     """
+    # Todo: remove trim silence feature from this function to a new function
     if len(file_list) == 0:
         raise ValueError('Not possible to process an empty list of files.')
 
@@ -142,7 +148,7 @@ def concat(file_list: list, output_dir: str, chunk_size: int=40,
                                    min_duration=min_duration,
                                    verbose_level=verbose_level,
                                    num_workers=num_workers)
-    print('[INFO] creating data set [%s]' % output_dir)
+    print('[INFO] creating dataloader set [%s]' % output_dir)
 
     # Temp files (will be removed after concatenation process)
     temp_files = set()
@@ -197,12 +203,27 @@ def concat(file_list: list, output_dir: str, chunk_size: int=40,
                         # Add file to file_list to process again
                         file_list.append(output_dir + os.sep + f.result())
     # Remove temporary files:
-    temp_files.remove(file_list[0])
+    if len(temp_files) == 0:
+        print("[FATAL ERROR]: the concatenated file is missing. You might want "
+              "to run again with the chunk_size=2, workers=1, and the "
+              "verbosity_level=2 parameters for debugging purposes.")
+        exit(-1)
+    final_file = file_list[0]
+    temp_files.remove(final_file)
     for file in temp_files:
         try:
             os.remove(file)
         except FileNotFoundError:
             print('[WARN] File not found:', file)
+
+    if trim_silence_threshold is not None and trim_silence_threshold > 0:
+        temp_file = final_file + '_temp_trs.wav'
+        cmd = 'sox -V' + str(verbose_level) + ' ' + final_file + ' ' + \
+              temp_file + ' silence 1 0.1 {}% -1 0.1 {}%'.\
+                  format(trim_silence_threshold, trim_silence_threshold)
+        os.system(cmd)
+        os.remove(final_file)
+        os.rename(temp_file, final_file)
 
     if name is not None:
         if os.path.isfile(output_dir + os.sep + name + '.wav'):
@@ -436,7 +457,7 @@ def fix_file(file_path: str, output_path_fixed: str, target_rate: int=16000,
         Useful to put all the audio files in the same directory.
     :param min_duration: int
         Set a minimum length to consider. The audio file with less than the
-        minimum provided will be ignored. Defaut to None.
+        minimum provided will be ignored. Default to None.
     :param verbose_level: int.
         Verbosity level. Default to 0.
 
@@ -464,6 +485,7 @@ def fix_file(file_path: str, output_path_fixed: str, target_rate: int=16000,
         if str(verbose_level) != '0':
             print(err)
         return None, file_path
+
     if current_rate != target_rate and current_n_channels != channels:
         speed = float(current_rate) / float(target_rate)
         cmd = 'sox -V{} -r 16k {} {} channels 1 ' \
@@ -547,6 +569,16 @@ if __name__ == '__main__':
                                              'concatenation process (only for '
                                              'concatenating task).',
                         default=40, type=int)
+    parser.add_argument('--limit', help='Set a limit of files to process. '
+                                        'Useful when the data is unbalanced '
+                                        'and the process is slow.',
+                        type=int)
+    parser.add_argument('--trim_silence', help='Volume threshold to trim '
+                                               'silence from audio files. '
+                                               'Default to 0, no trim will be '
+                                               'performed. '
+                                               'Recommended value: 1',
+                        type=float, default=0)
     parser.add_argument('--del_temp', help='Remove temporary files before '
                                            'processing.',
                         action='store_true')
@@ -564,6 +596,8 @@ if __name__ == '__main__':
     output_rate = arguments.rate
     verbose = arguments.v
     min_length = arguments.min_length
+    limit = arguments.limit
+    trim_silence = arguments.trim_silence
 
     temp_folder = 'temp'
     if arguments.del_temp and os.path.isdir('temp'):
@@ -643,9 +677,16 @@ if __name__ == '__main__':
                   'folder already exists.')
             exit(1)
 
+        if limit is not None:
+            print('[INFO] Limiting amount of files to process')
+            for files_list in files_list_lang:
+                files_list_lang[files_list] = files_list_lang[files_list][
+                                              :limit]
+
         print('\n> CONCATENATING FILES')
         print('TOTAL FILES TO BE PROCESSED: %d' %
               (sum(len(b) for b in files_list_lang.values())))
+
         for base in files_list_lang:
             print('[INFO] processing base "%s"' % base)
 
@@ -657,6 +698,8 @@ if __name__ == '__main__':
                    name=base,
                    exist_ok=True,
                    rate=output_rate,
+                   trim_silence_threshold=trim_silence,
+                   min_duration=min_length,
                    chunk_size=arguments.chunk_size)
 
     if perform_task['trim']:
