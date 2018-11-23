@@ -4,7 +4,7 @@ import matplotlib
 # matplotlib.use("Agg")
 
 from matplotlib import pyplot as plt
-from util.batching.generator import Generator
+from util.dataloader.batching.generator import Generator
 from util.datasets.csv import CSVParser
 from keras import optimizers
 from keras.models import Sequential
@@ -15,7 +15,8 @@ from keras.layers import (Conv2D,
                           Flatten,
                           Dropout,
                           LSTM,
-                          CuDNNLSTM)
+                          CuDNNLSTM,
+                          BatchNormalization)
 from keras.utils import to_categorical
 from keras.utils.vis_utils import plot_model
 from sklearn import preprocessing
@@ -25,10 +26,11 @@ from util.imgload import img_load
 import numpy as np
 import random
 import time
+import keras
 
 # Image properties:
-# width, height = 800, 513  # sox
-width, height = 640, 480  # librosa
+width, height = 800, 513  # sox
+# width, height = 640, 480  # librosa
 # width, height = 768, 256  # dft
 
 
@@ -81,7 +83,7 @@ def conv():
 
     # Set up the data
     num_classes, X_train, X_val, y_train, y_val = \
-        get_data('data/dataset_test_1.csv')
+        get_data('test.csv')
 
     # Set up the generator
     training_gen = Generator(X_train, y_train, batch_size=16,
@@ -94,7 +96,7 @@ def conv():
     # Convolutional layers:
 
     # Convolutional layer 1
-    model.add(Conv2D(filters=16, kernel_size=(7, 7), strides=1,
+    model.add(Conv2D(filters=16, kernel_size=(5, 5), strides=1,
                      activation='relu', input_shape=input_shape))
     model.add(MaxPooling2D(pool_size=(2, 2), strides=2, padding='same'))
     # Convolutional layer 2
@@ -165,19 +167,59 @@ def conv():
                                                                1000)))))
 
     print('[INFO] serializing network...')
-    model.save('models/scratch_model/test001_{}.h5'.format(str(int(
+    model.save('models/scratch_model/test002_{}.h5'.format(str(int(
         round(time.time() * 1000)))))
     print('DONE')
 
 
-if __name__ == '__main__':
-    # conv()
-    from keras.models import load_model
-    model = load_model('models/scratch_model/test001_1540234086146.h5')
+def lstm_mfcc():
+    # Model constants
+    input_shape = 20, 216
+    epochs = 20
+    # Set up the data
     # Set up the data
     num_classes, X_train, X_val, y_train, y_val = \
-        get_data('data/seconds_5_augment_data_rate16k.csv')
-    #
+        get_data('test_mfcc.csv')
+
+    # Set up the generator
+    training_gen = Generator(X_train, y_train, batch_size=16,
+                             loader_fn=np.load)
+    val_gen = Generator(X_val, y_val, batch_size=16, loader_fn=np.load)
+
+    # Build model
+    model = Sequential()
+    model.add(CuDNNLSTM(400, return_sequences=True, input_shape=input_shape))
+    model.add(BatchNormalization())
+    model.add(CuDNNLSTM(200, return_sequences=True, input_shape=input_shape))
+    model.add(BatchNormalization())
+    model.add(CuDNNLSTM(100, return_sequences=False))
+    model.add(BatchNormalization())
+    model.add(Dense(num_classes, activation='softmax'))
+    sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='mean_squared_error', optimizer=sgd,
+                  metrics=['accuracy'])
+    print(model.summary())
+
+    tb = TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=16,
+                     write_graph=True, write_grads=False, write_images=False,
+                     embeddings_freq=0, embeddings_layer_names=None,
+                     embeddings_metadata=None, embeddings_data=None)
+
+    es = keras.callbacks.EarlyStopping(monitor='loss', patience=1, verbose=1)
+    H = model.fit_generator(generator=training_gen,
+                            validation_data=val_gen,
+                            epochs=epochs,
+                            callbacks=[es, tb],
+                            verbose=1)
+
+    print('[INFO] serializing network...')
+    model.save('models/scratch_model/lstm_mfcc.h5')
+    print('DONE')
+
+
+if __name__ == '__main__':
+    conv()
+    lstm_mfcc()
     # # Set up the generator
     # gen = Generator(X_train, y_train, batch_size=16, loader_fn=img_load)
     # print(model.metrics_names)
