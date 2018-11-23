@@ -31,6 +31,8 @@ def create_dataset(n_instances: int, output_dir: str, files_paths: list,
         random.shuffle(files_paths)
 
     for i, file in enumerate(files_paths):
+        if i % 100 == 0:
+            print('{} done of {}'.format(i, n_instances))
         if i == n_instances:
             break
         n = ''.join(random.choice(string.ascii_letters + string.digits)
