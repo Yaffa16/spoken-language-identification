@@ -96,7 +96,7 @@ if __name__ == '__main__':
         for p, l in zip(file_paths, file_labels):
             csv_file.write(p + ',' + l + '\n')
 
-    if val_split is not None:
+    if val_split != 0.0:
         paths_per_label = defaultdict(lambda: [])
         for p, l in zip(file_paths, file_labels):
             paths_per_label[l].append(p)
