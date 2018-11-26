@@ -69,7 +69,7 @@ def files_to_process(files_list: list, output_dir: str,
 
 def process_files_in_parallel(data_path: str, output_path: str,
                               files_list: list, fun: callable, workers=None,
-                              **kwargs):
+                              n_mfcc: int=20, **kwargs):
     """
     Process files in parallel, calling the provided function.
 
@@ -83,7 +83,9 @@ def process_files_in_parallel(data_path: str, output_path: str,
         A function to call.
     :param workers: int
         The maximum number of processes that can be used to execute the given
-        calls
+        calls.
+    n_mfcc: int > 0 [scalar]
+        number of MFCCs to return.
     :param kwargs:
         Additional kwargs are passed on to the callable object.
     """
@@ -98,6 +100,7 @@ def process_files_in_parallel(data_path: str, output_path: str,
                                    audio_path=data_path + os.sep + file_n,
                                    output_path=output_path,
                                    name=file_n[:-4],
+                                   n_mfcc=n_mfcc,
                                    **kwargs)
                    for file_n in files_list]
 
@@ -120,7 +123,7 @@ def process_files_in_parallel(data_path: str, output_path: str,
 # Helper functions (necessary to use concurrent.futures)
 
 def extract_and_save_mfcc(audio_path: str, output_path: str, name: str,
-                          duration: int, **kwargs):
+                          duration: int, n_mfcc: int=20, **kwargs):
     """
     Extract and save mfcc features of an audio file in a binary file in NumPy
     .npy format.
@@ -133,10 +136,12 @@ def extract_and_save_mfcc(audio_path: str, output_path: str, name: str,
         Duration to load up each audio.
     :param name: str
         Output file name.
+    n_mfcc: int > 0 [scalar]
+        number of MFCCs to return.
     :param kwargs: Additional kwargs are passed on to the librosa.load function.
     """
     y, sr = librosa.load(audio_path, duration=duration, **kwargs)
-    features = librosa.feature.mfcc(y, sr)
+    features = librosa.feature.mfcc(y, sr, n_mfcc=n_mfcc)
     np.save(file=output_path + os.sep + name, arr=features)
 
 
@@ -149,6 +154,8 @@ if __name__ == '__main__':
     parser.add_argument('output', help='Output directory.')
     parser.add_argument('--duration', help='Duration to load up each audio.',
                         type=int, default=4)
+    parser.add_argument('--n_mfcc', help='Number of MFCCs to return.',
+                        type=int, default=20)
     parser.add_argument('--workers', help='Define how many process to run in '
                                           'parallel.', default=4, type=int)
     parser.add_argument('--check', help='Check output directories ignoring '
@@ -165,6 +172,7 @@ if __name__ == '__main__':
     data_dir = arguments.source
     output = arguments.output
     dur = arguments.duration
+    mfcc = arguments.n_mfcc
 
     # Make directories
     os.makedirs(output, exist_ok=True)
@@ -182,7 +190,8 @@ if __name__ == '__main__':
     with Timer() as timer:
         process_files_in_parallel(fun=extract_and_save_mfcc, duration=dur,
                                   files_list=files, data_path=data_dir,
-                                  output_path=output, workers=arguments.workers)
+                                  n_mfcc=mfcc, output_path=output,
+                                  workers=arguments.workers)
 
     print('WORK DONE, total taken time: %.03f sec.' % timer.interval)
 
