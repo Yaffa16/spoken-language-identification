@@ -1,0 +1,32 @@
+{
+  "exp": {
+    "name": "conv_model_1_from_config"
+  },
+  "data_loader": {
+    "name": "util.data.specgramloader"
+  },
+  "generator": {
+    "name": "util.data.batching.generator"
+  },
+  "model":{
+    "name": "conv_model_1.Network",
+    "learning_rate": 0.001,
+    "optimizer": "adadelta"
+  },
+  "trainer":{
+    "name": ".SimpleMnistModelTrainer",
+    "num_epochs": 20,
+    "batch_size": 64,
+    "validation_split":0.25,
+    "use_generator":true,
+    "verbose_training": true
+  },
+  "callbacks":{
+    "checkpoint_monitor": "val_loss",
+    "checkpoint_mode": "min",
+    "checkpoint_save_best_only": true,
+    "checkpoint_save_weights_only": true,
+    "checkpoint_verbose": true,
+    "tensorboard_write_graph": true
+  }
+}
