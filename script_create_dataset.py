@@ -88,7 +88,7 @@ def create_dataset(dataset_dir: str, file_list: list, num_workers: int=None,
         Additional kwargs are passed on to the pre processing function.
     """
     os.makedirs(dataset_dir, exist_ok=True)
-    print('[INFO] creating dataloader set [%s]' % dataset_dir)
+    print('[INFO] creating data set [%s]' % dataset_dir)
 
     # Set handler function to process each file
     handler = pre_processing if pre_processing is not None else copyfile
@@ -98,7 +98,7 @@ def create_dataset(dataset_dir: str, file_list: list, num_workers: int=None,
             handler(file_path, dataset_dir, **kwargs)
         return
 
-    # Process dataloader in parallel
+    # Process data in parallel
     with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as \
             executor:
         futures = [executor.submit(handler, file_path, dataset_dir, **kwargs)
@@ -179,7 +179,7 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
                          file_path.split(os.sep)[-1].split('.')[-2] + '.wav'
         cmd = 'sox -V' + str(verbose_level) + ' ' + file_path + ' ' \
               + temp_file_path + \
-              ' silence 1 0.1 {}% -1 0.1 {}%'.format(trim_silence_threshold,
+              ' silence 1 0.1 {}% -1 5.0 {}%'.format(trim_silence_threshold,
                                                      trim_silence_threshold)
         os.system(cmd)
         pre_process(file_path=temp_file_path,
