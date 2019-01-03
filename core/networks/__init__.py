@@ -15,12 +15,15 @@ import keras
 import imageio
 import numpy as np
 import tensorflow as tf
+import talos
+from abc import ABC, abstractmethod
 
 
-class BaseModel:
+class BaseModel(ABC):
     def __init__(self, config):
-        self.config = config
-        self.model = None
+        super(BaseModel, self).__init__()
+        self._config = config
+        self._model = None
 
     def save(self, checkpoint_path):
         if self.model is None:
@@ -38,5 +41,30 @@ class BaseModel:
         self.model.load_weights(checkpoint_path)
         print("Model loaded")
 
+    @property
+    def model(self):
+        return self._model
+
+    @property
+    def config(self):
+        return self._config
+
+    def train(self):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return self.train(), self
+
+    @abstractmethod
     def build_model(self):
         raise NotImplementedError
+
+
+class HyperParameterSearchable:
+
+    def run(self):
+        pass
+
+
+
+
