@@ -28,13 +28,13 @@ if __name__ == '__main__':
                                           'while balancing the number of '
                                           'instances of each class.',
                         action='store_true', default=False)
-    parser.add_argument('--val_split', help='Creates another two CSV files and '
-                                            'split data paths and labels into '
-                                            'two data sets for training and '
-                                            'validation. Provide a number '
-                                            'between 0.0 and 1.0 that '
-                                            'represents the proportion of the '
-                                            'dataset to split.',
+    parser.add_argument('--test_split', help='Creates another two CSV files '
+                                             'and split data paths and labels '
+                                             'into two data sets for training '
+                                             'and testing. Provide a number '
+                                             'between 0.0 and 1.0 that '
+                                             'represents the proportion of the '
+                                             'dataset to split.',
                         type=float, default=0.0)
     parser.add_argument('--format', help='Format of the data.',
                         default='*')
@@ -50,14 +50,14 @@ if __name__ == '__main__':
     recursive = args.r
     data_format = args.format
     shuffle = args.shuffle
-    val_split = args.val_split
+    test_split = args.test_split
     data_balance = args.balance
 
-    if data_balance and val_split is None:
-        print('[WARN] Validation split is set but data balancing will not be '
+    if data_balance and test_split is None:
+        print('[WARN] Testing split is set but data balancing will not be '
               'performed.')
-    if shuffle and val_split is None:
-        print('[WARN] Validation split is set but data shuffling will not be '
+    if shuffle and test_split is None:
+        print('[WARN] Testing split is set but data shuffling will not be '
               'performed.')
 
     paths = paths_and_labels[0::2]
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         for p, l in zip(file_paths, file_labels):
             csv_file.write(p + ',' + l + '\n')
 
-    if val_split != 0.0:
+    if test_split != 0.0:
         paths_per_label = defaultdict(lambda: [])
         for p, l in zip(file_paths, file_labels):
             paths_per_label[l].append(p)
@@ -107,24 +107,24 @@ if __name__ == '__main__':
         for label in paths_per_label:
             train_test_paths += paths_per_label[label][0:len(
                 paths_per_label[label]) - int(
-                val_split*len(paths_per_label[label]))]
+                test_split * len(paths_per_label[label]))]
             train_test_labels += [label for _ in range(0, int(len(
-                paths_per_label[label]) - val_split * len(
+                paths_per_label[label]) - test_split * len(
                 paths_per_label[label])))]
             val_paths += paths_per_label[label][-int(
-                val_split*len(paths_per_label[label])):len(
+                test_split * len(paths_per_label[label])):len(
                 paths_per_label[label])]
-            val_labels += [label for _ in range(0, int(val_split*len(
+            val_labels += [label for _ in range(0, int(test_split * len(
                 paths_per_label[label])))]
 
-        with open(csv_path[:-4] + '_train_test_data.csv', 'w') as csv_file:
-            print('[INFO] creating a csv file with train/test data, '
-                  'proportion=', 1 - val_split)
+        with open(csv_path[:-4] + '_train_data.csv', 'w') as csv_file:
+            print('[INFO] creating a csv file with train data, '
+                  'proportion=', 1 - test_split)
             for p, l in zip(train_test_paths, train_test_labels):
                 csv_file.write(p + ',' + l + '\n')
 
-        with open(csv_path[:-4] + '_val_data.csv', 'w') as csv_file:
-            print('[INFO] creating a csv file with validation data, '
-                  'proportion=', val_split)
+        with open(csv_path[:-4] + '_test_data.csv', 'w') as csv_file:
+            print('[INFO] creating a csv file with test data, '
+                  'proportion=', test_split)
             for p, l in zip(val_paths, val_labels):
                 csv_file.write(p + ',' + l + '\n')
