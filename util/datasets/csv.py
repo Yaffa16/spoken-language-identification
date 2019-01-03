@@ -3,6 +3,7 @@ Module to parse csv dataset files.
 """
 
 import numpy as np
+import os
 
 
 class CSVParser:
@@ -27,7 +28,12 @@ class CSVParser:
         with open(self.path) as dataset:
             for line in dataset:
                 data = line.split(',')
-                self.file_names.append(data[0])
+                n = data[0]
+                if os.sep == '\\':
+                    n = n.replace('/', os.sep)
+                elif os.sep == '/':
+                    n = n.replace('\\', os.sep)
+                self.file_names.append(n)
                 self.labels.append(data[-1].rstrip())
 
     def data_and_labels(self) -> (list, list):
