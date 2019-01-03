@@ -56,12 +56,19 @@ if __name__ == '__main__':
                         type=int, default=1000)
     parser.add_argument('--shuffle', help='Generates the new dataset randomly.',
                         default=True, action='store_true')
+    parser.add_argument('--random_name', help='Each file will be renamed to a '
+                                              'random string.',
+                        action='store_true', default=False)
+    parser.add_argument('--format', help='File format (optional)',
+                        default='wav')
     # Set arguments settings:
     arguments = parser.parse_args()
     data_dir = arguments.corpus
     output = arguments.output
     rand = arguments.shuffle
     instances = arguments.instances
+    rand_name = arguments.random_name
+    data_format = arguments.format
 
     # Load json info about bases
     if os.path.isfile(data_dir):
@@ -80,9 +87,12 @@ if __name__ == '__main__':
                                        bases_json[base]['format'],
                                        recursive=True)
             create_dataset(n_instances=instances, output_dir=output + os.sep +
-                           str(base), files_paths=all_files_path, shuffle=rand)
+                           str(base), files_paths=all_files_path, shuffle=rand,
+                           random_name=rand_name)
     else:
-        all_files_path = glob.glob(data_dir + '/**/*.wav', recursive=True)
+        all_files_path = glob.glob(data_dir + '/**/*.' + data_format,
+                                   recursive=True)
         print('Total of raw files: %d' % len(all_files_path))
         create_dataset(n_instances=instances, output_dir=output,
-                       files_paths=all_files_path, shuffle=rand)
+                       files_paths=all_files_path, shuffle=rand,
+                       random_name=rand_name)
