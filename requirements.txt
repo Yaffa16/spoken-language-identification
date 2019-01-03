@@ -3,7 +3,6 @@ astor==0.7.1
 bleach==1.5.0
 certifi==2018.4.16
 cycler==0.10.0
-Cython==0.28.4
 gast==0.2.0
 grpcio==1.12.1
 h5py==2.8.0
