@@ -62,7 +62,7 @@ def specgram_lbrs(audiopath: str, plotpath: str=None, name: str=None,
         spec_data = librosa.power_to_db(spec_data, ref=np.max)
     elif algorithm == 'log':
         spec_data = librosa.cqt(y, sr, **kwargs)
-        # Convert the data spectrogram to decibel units
+        # Convert the dataloader spectrogram to decibel units
         spec_data = librosa.power_to_db(librosa.magphase(spec_data, power=2)[0],
                                         ref=np.max)
     else:

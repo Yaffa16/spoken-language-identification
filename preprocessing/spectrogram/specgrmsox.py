@@ -25,8 +25,8 @@ def specgram_sox(audiopath: str, plotpath: str=None, name: str=None,
     :param effect_options: string
         Sox effect options. Default: -m for monochromatic settings and -r to
         suppress the display of axes and legends.
-    :param kargs:
-        Additional kargs are passed on to global options at sox command line
+    :param kwargs:
+        Additional kwargs are passed on to global options at sox command line
         arguments. Default to [('remix', '2'), ('rate', '16k')].
 
     """
