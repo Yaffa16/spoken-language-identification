@@ -1,5 +1,5 @@
 """
-This script creates usable dataloader sets for training. All dataloader of the original
+This script creates usable data sets for training. All data of the original
 bases will be concatenated before processing.
 
 Dependencies:
@@ -148,7 +148,7 @@ def concat(file_list: list, output_dir: str, chunk_size: int=40,
                                    min_duration=min_duration,
                                    verbose_level=verbose_level,
                                    num_workers=num_workers)
-    print('[INFO] creating dataloader set [%s]' % output_dir)
+    print('[INFO] creating data set [%s]' % output_dir)
 
     # Temp files (will be removed after concatenation process)
     temp_files = set()
