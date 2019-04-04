@@ -27,12 +27,12 @@ def specgram_sox(audiopath: str, plotpath: str=None, name: str=None,
         suppress the display of axes and legends.
     :param kwargs:
         Additional kwargs are passed on to global options at sox command line
-        arguments. Default to [('remix', '2'), ('rate', '16k')].
+        arguments. Default to {'remix': '1'}.
 
     """
     if plotpath is not None and not os.path.isdir(plotpath):
         os.makedirs(plotpath)
-    kwargs.setdefault('rate', '16k')
+    kwargs.setdefault('remix', '1')
     global_options = ''
     for k in kwargs:
         global_options += ' ' + k + ' ' + kwargs[k]
@@ -45,10 +45,10 @@ def specgram_sox(audiopath: str, plotpath: str=None, name: str=None,
     else:
         output = plotpath + '/' + name + '.png'
 
-    command = 'sox -V0 {} -n {} spectrogram {} -o {}'.format(audiopath,
-                                                             global_options,
-                                                             effect_options,
-                                                             output)
+    command = 'sox -V0 "{}" -n {} spectrogram {} -o "{}"'.format(audiopath,
+                                                                 global_options,
+                                                                 effect_options,
+                                                                 output)
 
     os.system(command)
     if not os.path.isfile(output):
