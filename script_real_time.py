@@ -5,30 +5,47 @@ This script records and tests in real time the language being spoken.
 import pyaudio
 import wave
 import numpy as np
+import librosa
 import os
+import sys
 from keras.models import load_model
+from keras.models import Model
 from preprocessing.spectrogram import *
 from multiprocessing import Process
 from util.imgload import img_load
+from pydub import AudioSegment
+import subprocess
 
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
-RECORD_SECONDS = 10
-WAVE_OUTPUT_FILENAME = 'test.wav'
-IMG_OUTPUT_FILENAME = 'test.png'
+RECORD_SECONDS = 5
+WAVE_OUTPUT_FILENAME = 'temp.wav'
 
 
-def real_time(model):
+def loader(p):
+    y, sr = librosa.load(p, duration=5)
+    d = librosa.feature.mfcc(y, sr, n_mfcc=13)
+    return d.reshape(d.shape[0], d.shape[1], 1)  # shape?
+
+
+def real_time(model_path: str):
     """
     Tests in real time a model.
 
-    :param model: a keras model
-        Only convolutional models are currently supported.
+    :param model_path: str
+        Path to the saved model.
     """
-    while True:
+    print('> Loading model')
+    model = load_model(model_path)
+    print('Done')
 
+    from script_create_dataset import trim_silence_audio, remix, convert_rate, \
+        trim
+
+    while True:
+        print('Gravando...')
         audio = pyaudio.PyAudio()
 
         stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE,
@@ -44,28 +61,32 @@ def real_time(model):
         stream.close()
         audio.terminate()
 
-        waveFile = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
-        waveFile.setnchannels(CHANNELS)
-        waveFile.setsampwidth(audio.get_sample_size(FORMAT))
-        waveFile.setframerate(RATE)
-        waveFile.writeframes(b''.join(frames))
-        waveFile.close()
+        wave_file = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+        wave_file.setnchannels(CHANNELS)
+        wave_file.setsampwidth(audio.get_sample_size(FORMAT))
+        wave_file.setframerate(RATE)
+        wave_file.writeframes(b''.join(frames))
+        wave_file.close()
 
-        specgram_lbrs(audiopath=WAVE_OUTPUT_FILENAME, name='test', y_axis='log')
-        p = np.round(model.predict(np.asarray([img_load(IMG_OUTPUT_FILENAME)])))
-        if p[0][0] == 1:
-            print('en')
-        elif p[0][1] == 1:
-            print('es')
-        elif p[0][2] == 1:
-            print('pt')
+        temp = set()
+        temp.add(remix(WAVE_OUTPUT_FILENAME, '.', 'temp1'))
+        temp.add(remix('temp1.wav', '.', 'temp2'))
+        temp.add(convert_rate(16000, 'temp2.wav', '.', 'temp3'))
+        data = loader('temp3.wav')
+        p = model.predict(np.asarray([data]))
+
+        print('> Predição:')
+        print(p)
+        os.system('play {} -t waveaudio'.format('temp3.wav'))
+        for a in temp:
+            os.remove(a)
 
 
 if __name__ == '__main__':
     # todo: add command line arguments
-    p = Process(real_time(load_model('models/scratch_model/conv.h5')))
+    p = Process(target=real_time,
+                kwargs={'model_path': sys.argv[1]})
     p.start()
-    input('Press any key to stop')
+    input('Press any key to stop\n')
     p.terminate()
     os.remove(WAVE_OUTPUT_FILENAME)
-    os.remove(IMG_OUTPUT_FILENAME)
