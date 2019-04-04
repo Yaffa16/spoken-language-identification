@@ -29,7 +29,7 @@ def extract_info(audio_path, command: str):
     :return: str
         The stdout resulted from the command.
     """
-    process = subprocess.Popen(command + ' ' + audio_path,
+    process = subprocess.Popen(command + ' "' + audio_path + '" ',
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
     stdout, stderr = process.communicate()
@@ -75,15 +75,21 @@ def append_csv(files_path, output_file, base_name=None,
     :return:
     """
     print('[INFO] extracting info from audio files')
-    with open(output_file, 'a') as file:
-        header = 'Corpus,Input File,Channels,Sample Rate,Precision, Duration,' \
-                 'File Size,Bit Rate,Sample Encoding'
-        header += str(',' + append_command[0] if append_command is not None
-                      else '')
-        file.write(header + '\n')
-
+    if not os.path.isfile(output_file):
+        with open(output_file, 'w') as file:
+            header = 'Corpus,Input File,Channels,Sample Rate,Precision,'\
+                     'Duration,File Size,Bit Rate,Sample Encoding'
+            header += str(',' + append_command[0] if append_command is not None
+                          else '')
+            file.write(header + '\n')
+    
+    with open(output_file, 'a') as file:    
         for file_path in tqdm(files_path):
             tokens = extract_all_info(file_path)
+            for token in tokens:
+                tokens[token] = tokens[token].replace(',', ' ')
+            if base_name is None:
+                base_name = os.path.basename(os.path.dirname(file_path))
             line = base_name \
                 + ',' + tokens['Input File']\
                 + ',' + tokens['Channels']\
@@ -141,11 +147,11 @@ if __name__ == '__main__':
             bases_json[base]['samples'] = len(all_files_path)
             print('Total of raw files: %d' % len(all_files_path))
             append_csv(all_files_path, output, str(base),
-                       append_command=('length', 'soxi -D') if append_len else
+                       append_command=('length', 'soxi -d') if append_len else
                        None)
     else:
         all_files_path = glob.glob(data_dir + '/**/*.wav', recursive=True)
         print('Total of raw files: %d' % len(all_files_path))
-        append_csv(all_files_path, output, str(data_dir).split(os.sep)[-1],
-                   append_command=('length', 'soxi -D') if append_len else
+        append_csv(all_files_path, output, base_name=None,
+                   append_command=('Length', 'soxi -d') if append_len else
                    None)
