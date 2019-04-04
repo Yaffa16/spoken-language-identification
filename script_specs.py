@@ -137,7 +137,7 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--dft', help='Process files using the default '
                                       'algorithm.', action='store_true',
-                        default=True)
+                        default=False)
     parser.add_argument('--sox', help='Process files using sox algorithm.',
                         action='store_true', default=False)
     parser.add_argument('--librosa_default', help='Process files using '
