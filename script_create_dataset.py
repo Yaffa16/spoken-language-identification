@@ -25,15 +25,25 @@ SPEEDS = np.delete(np.linspace(0.8, 1.2, 9), 4)
 # 8 semitones between (-200, 200); remove the semitone with value 0
 SEMITONES = np.delete(np.linspace(-200, 200, 9), 4)
 
-# Changed in 22/03:
-# make list of all files in preprocessing/noises
 NOISES = list(glob.glob('preprocessing/noises/**/*.wav', recursive=True))
-
-# Changed in 22/03:
-# make function get_audio_info
 
 
 def get_audio_info(file_path, *args, verbose_level=0):
+    """
+    Get audio info.
+
+    :param file_path: str
+        Path of the audio file.
+    :param args: *str
+        List of key arguments. Currently supports 'duration' and 'rate'.
+    :param verbose_level: int
+        Verbosity level.
+
+    :return: dict or str
+        The returned value will be a dict with keys and the respective
+        gathered information or only the information if you request a unique
+        feature.
+    """
     info = dict()
     value = None
     try:
@@ -322,17 +332,6 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
                          verbose_level)
         temp_files.add(file_path)
 
-    # TODO: remove dead code
-    # audio_length = float(syscommand.system('soxi -D ' + file_path,
-    #                                        debug=True if str(verbose_level)
-    #                                                      == '2' else False))
-    # if expected_length is None or audio_length >= expected_length:
-    #     temp_files.remove(file_path)
-    # else:
-    #     pass  # The file will be deleted
-    #     if int(verbose_level) >= 1:
-    #         print('Length of audio {} is less than {} (will be deleted)'.format(
-    #             file_path, min_length))
     temp_files.remove(file_path)
 
     # Remove the temporary files
@@ -463,16 +462,6 @@ def convert_rate(rate, file_path, output_dir, file_name,
         print(cmd)
     os.system(cmd)
 
-    # TODO: remove dead code
-    # # Speed up to the original time
-    # # This is necessary because when the rate is converted in sox the
-    # # length of the audio file changes as well.
-    # temp_file_speed = speed(current_rate / float(rate), temp_file_path,
-    #                         output_dir, temp_file_path.replace('/', os.sep).
-    #                         split(os.sep)[-1][:-4] + '_temp',
-    #                         verbose_level)
-    # os.remove(temp_file_path)
-    # os.rename(temp_file_speed, temp_file_path)
     return temp_file_path
 
 
@@ -782,13 +771,6 @@ def augment_data(data_path: str, file_list: list, sliding_window: int=None,
                               format(audio, i, i + seconds, i,
                                      int(audio_length) - trimming_window))
 
-                    # New feature (changed at 25/03) -> separate files by directory
-                    # pre_process(output_dir=data_path,
-                    #             file_path=audio,
-                    #             verbose_level=verbose_level,
-                    #             min_length=int(seconds),
-                    #             trim_interval=(i, i + seconds),
-                    #             **kwargs)
                     pre_process(output_dir=data_path + os.sep +
                                            os.path.basename(os.path.
                                                             dirname(audio)),
@@ -801,13 +783,6 @@ def augment_data(data_path: str, file_list: list, sliding_window: int=None,
             for audio in (tqdm(file_list) if int(verbose_level) < 2 else
             file_list):
                 # Process data in parallel
-                # New feature (changed at 25/03) -> separate files by directory
-                # process_trim_parallel(audio=audio,
-                #                       output_dir=data_path,
-                #                       seconds=seconds,
-                #                       trimming_window=trimming_window,
-                #                       num_workers=num_workers,
-                #                       verbose_level=verbose_level)
                 process_trim_parallel(audio=audio,
                                       output_dir=data_path + os.sep +
                                                  os.path.basename(os.path.
