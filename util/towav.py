@@ -15,7 +15,8 @@ import argparse
 import glob
 
 
-def mpg_convert(input_path: str, output_path: str, check=True):
+def mpg_convert(input_path: str, output_path: str, check=True,
+                verbose_level=0):
     """
     Convert an audio file to wav format.
 
@@ -28,7 +29,11 @@ def mpg_convert(input_path: str, output_path: str, check=True):
 
     Currently supported formats: formats supported by mpg123 software.
     """
-    os.system('mpg123 -w ' + output_path + ' ' + input_path)
+    if verbose_level > 0:
+        v = '-v'
+    else:
+        v = '-q'
+    os.system('mpg123 ' + v + ' -w ' + output_path + ' ' + input_path)
     if check:
         if not os.path.isfile(output_path):
             raise RuntimeError('Not able to convert file', input_path,
@@ -81,8 +86,6 @@ if __name__ == '__main__':
                         choices=[0, 1, 2], type=int)
     args = parser.parse_args()
 
-    os.makedirs(args.out_dir, exist_ok=True)
-
     files = glob.glob(args.data_dir + '/**/*.*', recursive=True)
     for file in tqdm(files):
         name = file.split(os.sep)[-1].split('.')[-2] if args.name == 'original'\
@@ -90,5 +93,9 @@ if __name__ == '__main__':
                          for _ in range(12))
         # copyfile(file, args.out_dir + os.sep + name + '.' +
         #          file.split(os.sep)[-1].split('.')[-1])
-        sox_convert(file, args.out_dir + os.sep + name + '.wav',
-                    check=args.check, verbose_level=args.verbose_level)
+
+        os.makedirs(args.out_dir + os.sep +
+                    os.path.basename(os.path.dirname(file)), exist_ok=True)
+        mpg_convert(file, args.out_dir + os.sep +
+                    os.path.basename(os.path.dirname(file)) + os.sep + name +
+                    '.wav', check=args.check, verbose_level=args.verbose_level)
