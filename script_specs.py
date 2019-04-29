@@ -69,7 +69,8 @@ def files_to_process(files_list: list, output_dir: str,
 
 
 def process_files_in_parallel(data_path: str, plot_path: str, files_list: list,
-                              fun: callable, workers=None, **kwargs):
+                              fun: callable, workers=None, verbose_level: int=0,
+                              **kwargs):
     """
     Process files in parallel, calling the provided function.
 
@@ -89,13 +90,21 @@ def process_files_in_parallel(data_path: str, plot_path: str, files_list: list,
     :param workers: int
         The maximum number of processes that can be used to execute the given
         calls
+    :param verbose_level: int
+        Verbose level
+
     :param kwargs:
         Additional kwargs are passed on to the callable object.
     """
+    if verbose_level > 1:
+        print('[INFO] processing {}'.format(data_path))
+        print('[INFO] output: {}'.format(plot_path))
+    if verbose_level > 2:
+        print('[FILES] > {}'.format(files_list))
     if len(files_list) == 0:
         return
     else:
-        print('Processing files through function', fun.__name__, kwargs)
+        print('[INFO] Processing files through function', fun.__name__, kwargs)
     with concurrent.futures.ProcessPoolExecutor(workers) \
             as executor:
         futures = [executor.submit(fun, audiopath=data_path + os.sep + file_n,
@@ -104,13 +113,13 @@ def process_files_in_parallel(data_path: str, plot_path: str, files_list: list,
                                    **kwargs)
                    for file_n in files_list]
 
-        kwargs = {
+        kw = {
             'total': len(futures),
             'unit': 'files',
             'unit_scale': True,
             'leave': True
         }
-        for f in tqdm(concurrent.futures.as_completed(futures), **kwargs):
+        for f in tqdm(concurrent.futures.as_completed(futures), **kw):
             pass
         with open('logs/scripts/script_specs-exceptions.txt', 'a') as log:
             log.write('\nExceptions for {} call at {}'.format(fun.__name__,
@@ -162,16 +171,27 @@ if __name__ == '__main__':
                         action='store_true', default=False)
     parser.add_argument('--matplotlib', help='Process files using matplotlib.',
                         action='store_true', default=False)
+    parser.add_argument('-R', help='Process files recursively. Note: the '
+                                   'processed files will be saved preserving '
+                                   'the folder name of the raw files. For '
+                                   'example, path/to/the/folder/file.wav will '
+                                   'be saved as output_dir/folder/algorithm/'
+                                   'file.png .', action='store_true',
+                        default=False)
     parser.add_argument('--v', help='Change verbosity level (sox output)',
-                        default=0)
+                        type=int, default=0)
     os.makedirs('logs/scripts/', exist_ok=True)
 
     # Set source and output directories:
     arguments = parser.parse_args()
     data_dir = arguments.source
-    output = arguments.output
+    output_dir = arguments.output
+    rec = arguments.R
     dft = arguments.dft
     sox = arguments.sox
+    check = arguments.check
+    check_after = arguments.check_after
+    v_level = arguments.v
     librosa_default = arguments.librosa_default
     librosa_log = arguments.librosa_log
     librosa_mel = arguments.librosa_mel
@@ -179,149 +199,189 @@ if __name__ == '__main__':
     librosa_dft_mel = arguments.librosa_dft_mel
     matplotlib = arguments.matplotlib
 
-    # Make directories
-    if dft:
-        os.makedirs(output + '/dft', exist_ok=True)
-    if sox:
-        os.makedirs(output + '/sox', exist_ok=True)
-    if librosa_default:
-        os.makedirs(output + '/librosa/default', exist_ok=True)
-    if librosa_log:
-        os.makedirs(output + '/librosa/log', exist_ok=True)
-    if librosa_mel:
-        os.makedirs(output + '/librosa/mel', exist_ok=True)
-    if librosa_dft_log:
-        os.makedirs(output + '/librosa/default/log', exist_ok=True)
-    if librosa_dft_mel:
-        os.makedirs(output + '/librosa/default/mel', exist_ok=True)
-    if matplotlib:
-        os.makedirs(output + '/matplotlib', exist_ok=True)
 
-    # files = glob.glob(data_dir + os.sep + '**/*.wav', recursive=True)
-    # files = [f.split(os.sep)[-1] for f in files]
-    files = os.listdir(data_dir)
-    files_dft = []
-    files_sox = []
-    files_lbr_dft = []
-    files_lbr_log = []
-    files_lbr_mel = []
-    files_lbr_dl = []
-    files_lbr_dm = []
-    files_plt = []
-
-    # Check processed files to ignore them
-    if arguments.check:
-        print("\n> CHECKING")
+    def process(files, folder, output, verbose_level):
         if dft:
-            files_dft = files_to_process(files, output + '/dft')
+            os.makedirs(output + '/dft', exist_ok=True)
         if sox:
-            files_sox = files_to_process(files, output + '/sox')
+            os.makedirs(output + '/sox', exist_ok=True)
         if librosa_default:
-            files_lbr_dft = files_to_process(files, output + '/librosa/default')
+            os.makedirs(output + '/librosa/default', exist_ok=True)
         if librosa_log:
-            files_lbr_log = files_to_process(files, output + '/librosa/log')
+            os.makedirs(output + '/librosa/log', exist_ok=True)
         if librosa_mel:
-            files_lbr_mel = files_to_process(files, output + '/librosa/mel')
+            os.makedirs(output + '/librosa/mel', exist_ok=True)
         if librosa_dft_log:
-            files_lbr_dl = files_to_process(files, output +
-                                            '/librosa/default/log')
+            os.makedirs(output + '/librosa/default/log', exist_ok=True)
         if librosa_dft_mel:
-            files_lbr_dm = files_to_process(files, output +
-                                            '/librosa/default/mel')
+            os.makedirs(output + '/librosa/default/mel', exist_ok=True)
         if matplotlib:
-            files_plt = files_to_process(files, output + '/matplotlib')
+            os.makedirs(output + '/matplotlib', exist_ok=True)
+
+        files_dft = []
+        files_sox = []
+        files_lbr_dft = []
+        files_lbr_log = []
+        files_lbr_mel = []
+        files_lbr_dl = []
+        files_lbr_dm = []
+        files_plt = []
+
+        # Check processed files to ignore them
+        if check:
+            print("\n> CHECKING")
+            if dft:
+                files_dft = files_to_process(files, output + '/dft')
+            if sox:
+                files_sox = files_to_process(files, output + '/sox')
+            if librosa_default:
+                files_lbr_dft = files_to_process(files,
+                                                 output + '/librosa/default')
+            if librosa_log:
+                files_lbr_log = files_to_process(files, output + '/librosa/log')
+            if librosa_mel:
+                files_lbr_mel = files_to_process(files, output + '/librosa/mel')
+            if librosa_dft_log:
+                files_lbr_dl = files_to_process(files, output +
+                                                '/librosa/default/log')
+            if librosa_dft_mel:
+                files_lbr_dm = files_to_process(files, output +
+                                                '/librosa/default/mel')
+            if matplotlib:
+                files_plt = files_to_process(files, output + '/matplotlib')
+        else:
+            if dft:
+                files_dft = files
+            if sox:
+                files_sox = files
+            if librosa_default:
+                files_lbr_dft = files
+            if librosa_log:
+                files_lbr_log = files
+            if librosa_mel:
+                files_lbr_mel = files
+            if librosa_dft_log:
+                files_lbr_dl = files
+            if librosa_dft_mel:
+                files_lbr_dm = files
+            if matplotlib:
+                files_plt = files
+
+        print('\n> PROCESSING {}'.format(folder))
+        with Timer() as timer:
+            if dft:
+                process_files_in_parallel(fun=specgram_dft,
+                                          files_list=files_dft,
+                                          data_path=folder,
+                                          plot_path=output + '/dft',
+                                          workers=arguments.workers,
+                                          verbose_level=verbose_level)
+            if sox:
+                process_files_in_parallel(fun=specgram_sox,
+                                          files_list=files_sox,
+                                          data_path=folder,
+                                          plot_path=output + '/sox',
+                                          workers=arguments.workers,
+                                          verbose_level=verbose_level)
+            if librosa_default:
+                process_files_in_parallel(fun=specgram_lbrs,
+                                          files_list=files_lbr_dft,
+                                          data_path=folder,
+                                          plot_path=output + '/librosa/default',
+                                          workers=arguments.workers,
+                                          verbose_level=verbose_level)
+            if librosa_log:
+                process_files_in_parallel(fun=specgram_lbrs,
+                                          files_list=files_lbr_log,
+                                          data_path=data_dir,
+                                          plot_path=output + '/librosa/log',
+                                          algorithm='log',
+                                          workers=arguments.workers,
+                                          verbose_level=verbose_level)
+            if librosa_mel:
+                process_files_in_parallel(fun=specgram_lbrs,
+                                          files_list=files_lbr_mel,
+                                          data_path=folder,
+                                          plot_path=output + '/librosa/mel',
+                                          algorithm='mel',
+                                          workers=arguments.workers,
+                                          verbose_level=verbose_level)
+            if librosa_dft_log:
+                process_files_in_parallel(fun=specgram_lbrs,
+                                          files_list=files_lbr_dl,
+                                          data_path=folder,
+                                          plot_path=output +
+                                                    '/librosa/default/log',
+                                          y_axis='log',
+                                          workers=arguments.workers,
+                                          verbose_level=verbose_level)
+            if librosa_dft_mel:
+                process_files_in_parallel(fun=specgram_lbrs,
+                                          files_list=files_lbr_dm,
+                                          data_path=folder,
+                                          plot_path=output +
+                                                    '/librosa/default/mel',
+                                          y_axis='mel',
+                                          workers=arguments.workers,
+                                          verbose_level=verbose_level)
+            if matplotlib:
+                process_files_in_parallel(fun=specgram_mtplt,
+                                          files_list=files_plt,
+                                          data_path=folder,
+                                          plot_path=output + '/matplotlib',
+                                          workers=arguments.workers,
+                                          verbose_level=verbose_level)
+
+        print('WORK DONE, total taken time: %.03f sec.' % timer.interval)
+
+        if check_after:
+            print("\n> CHECKING")
+            if dft:
+                files_dft = files_to_process(files, output + '/dft')
+            if sox:
+                files_sox = files_to_process(files, output + '/sox')
+            if librosa_default:
+                files_lbr_dft = files_to_process(files, output +
+                                                 '/librosa/default')
+            if librosa_log:
+                files_lbr_log = files_to_process(files, output + '/librosa/log')
+            if librosa_mel:
+                files_lbr_mel = files_to_process(files, output + '/librosa/mel')
+            if librosa_dft_log:
+                files_lbr_dm = files_to_process(files, output +
+                                                '/librosa/default/log')
+            if librosa_dft_mel:
+                files_lbr_dl = files_to_process(files, output +
+                                                '/librosa/default/mel')
+            if matplotlib:
+                files_plt = files_to_process(files, output + '/matplotlib')
+
+            with open('logs/scripts/specs_remaining_files.txt', 'w') as file:
+                for rem_file in list(files_dft + files_sox + files_lbr_dft +
+                                     files_lbr_dl + files_lbr_log +
+                                     files_lbr_mel + files_lbr_dm + files_plt):
+                    file.write('\n' + rem_file)
+
+    if rec:
+        if v_level > 1:
+            print('[INFO] recursive mode enabled')
+        folders = []  # Directories to process
+        for r, d, f in os.walk(data_dir):
+            for folder in d:
+                if v_level > 1:
+                    print('[INFO] will process directory '
+                          '{}'.format(os.path.join(r, folder)))
+                folders.append(os.path.join(r, folder))
+                if not os.path.isdir(os.path.join(output_dir, folder)):
+                    os.makedirs(os.path.join(output_dir, folder), exist_ok=True)
+                    if v_level > 1:
+                        print('[INFO] creating directory '
+                              '{}'.format(os.path.join(output_dir, folder)))
     else:
-        if dft:
-            files_dft = files
-        if sox:
-            files_sox = files
-        if librosa_default:
-            files_lbr_dft = files
-        if librosa_log:
-            files_lbr_log = files
-        if librosa_mel:
-            files_lbr_mel = files
-        if librosa_dft_log:
-            files_lbr_dl = files
-        if librosa_dft_mel:
-            files_lbr_dm = files
-        if matplotlib:
-            files_plt = files
+        folders = [data_dir]
 
-    print('\n> PROCESSING')
-    with Timer() as timer:
-        if dft:
-            process_files_in_parallel(fun=specgram_dft, files_list=files_dft,
-                                      data_path=data_dir,
-                                      plot_path=output + '/dft',
-                                      workers=arguments.workers)
-        if sox:
-            process_files_in_parallel(fun=specgram_sox, files_list=files_sox,
-                                      data_path=data_dir,
-                                      plot_path=output + '/sox',
-                                      workers=arguments.workers)
-        if librosa_default:
-            process_files_in_parallel(fun=specgram_lbrs,
-                                      files_list=files_lbr_dft,
-                                      data_path=data_dir,
-                                      plot_path=output + '/librosa/default',
-                                      workers=arguments.workers)
-        if librosa_log:
-            process_files_in_parallel(fun=specgram_lbrs,
-                                      files_list=files_lbr_log,
-                                      data_path=data_dir, plot_path=output +
-                                      '/librosa/log', algorithm='log',
-                                      workers=arguments.workers)
-        if librosa_mel:
-            process_files_in_parallel(fun=specgram_lbrs,
-                                      files_list=files_lbr_mel,
-                                      data_path=data_dir, plot_path=output +
-                                      '/librosa/mel', algorithm='mel',
-                                      workers=arguments.workers)
-        if librosa_dft_log:
-            process_files_in_parallel(fun=specgram_lbrs,
-                                      files_list=files_lbr_dl,
-                                      data_path=data_dir, plot_path=output +
-                                      '/librosa/default/log', y_axis='log',
-                                      workers=arguments.workers)
-        if librosa_dft_mel:
-            process_files_in_parallel(fun=specgram_lbrs,
-                                      files_list=files_lbr_dm,
-                                      data_path=data_dir, plot_path=output +
-                                      '/librosa/default/mel', y_axis='mel',
-                                      workers=arguments.workers)
-        if matplotlib:
-            process_files_in_parallel(fun=specgram_mtplt, files_list=files_plt,
-                                      data_path=data_dir,
-                                      plot_path=output + '/matplotlib',
-                                      workers=arguments.workers)
-
-    print('WORK DONE, total taken time: %.03f sec.' % timer.interval)
-
-    if arguments.check_after:
-        print("\n> CHECKING")
-        if dft:
-            files_dft = files_to_process(files, output + '/dft')
-        if sox:
-            files_sox = files_to_process(files, output + '/sox')
-        if librosa_default:
-            files_lbr_dft = files_to_process(files, output +
-                                             '/librosa/default')
-        if librosa_log:
-            files_lbr_log = files_to_process(files, output + '/librosa/log')
-        if librosa_mel:
-            files_lbr_mel = files_to_process(files, output + '/librosa/mel')
-        if librosa_dft_log:
-            files_lbr_dm = files_to_process(files, output +
-                                            '/librosa/default/log')
-        if librosa_dft_mel:
-            files_lbr_dl = files_to_process(files, output +
-                                            '/librosa/default/mel')
-        if matplotlib:
-            files_plt = files_to_process(files, output + '/matplotlib')
-
-        with open('logs/scripts/specs_remaining_files.txt', 'w') as file:
-            for rem_file in list(files_dft + files_sox + files_lbr_dft +
-                                 files_lbr_dl + files_lbr_log + files_lbr_mel +
-                                 files_lbr_dm + files_plt):
-                file.write('\n' + rem_file)
+    for folder in folders:
+        process(files=os.listdir(folder),
+                folder=folder,
+                output=os.path.join(output_dir, os.path.basename(folder)),
+                verbose_level=v_level)

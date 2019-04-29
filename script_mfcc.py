@@ -69,7 +69,7 @@ def files_to_process(files_list: list, output_dir: str,
 
 def process_files_in_parallel(data_path: str, output_path: str,
                               files_list: list, fun: callable, workers=None,
-                              n_mfcc: int=20, **kwargs):
+                              n_mfcc: int=20, verbose_level: int=0, **kwargs):
     """
     Process files in parallel, calling the provided function.
 
@@ -84,33 +84,36 @@ def process_files_in_parallel(data_path: str, output_path: str,
     :param workers: int
         The maximum number of processes that can be used to execute the given
         calls.
-    n_mfcc: int > 0 [scalar]
+    :param n_mfcc: int > 0 [scalar]
         number of MFCCs to return.
+    :param verbose_level: int
+        Verbose level
     :param kwargs:
         Additional kwargs are passed on to the callable object.
     """
     if len(files_list) == 0:
         return
     else:
-        print('Processing files through function', fun.__name__, kwargs)
+        print('[INFO] Processing files through function', fun.__name__, kwargs)
 
     with concurrent.futures.ProcessPoolExecutor(workers) \
             as executor:
         futures = [executor.submit(fn=fun,
-                                   audio_path=data_path + os.sep + file_n,
+                                   audio_path=data_path + os.sep + file,
                                    output_path=output_path,
-                                   name=file_n[:-4],
+                                   name=os.path.basename(file)[:-4],
                                    n_mfcc=n_mfcc,
+                                   verbose_level=verbose_level,
                                    **kwargs)
-                   for file_n in files_list]
+                   for file in files_list]
 
-        kwargs = {
+        kw = {
             'total': len(futures),
             'unit': 'files',
             'unit_scale': True,
             'leave': True
         }
-        for f in tqdm(concurrent.futures.as_completed(futures), **kwargs):
+        for f in tqdm(concurrent.futures.as_completed(futures), **kw):
             pass
         with open('logs/scripts/script_mfcc-exceptions.txt', 'a') as log:
             log.write('\nExceptions for {} call at {}'.format(fun.__name__,
@@ -123,7 +126,8 @@ def process_files_in_parallel(data_path: str, output_path: str,
 # Helper functions (necessary to use concurrent.futures)
 
 def extract_and_save_mfcc(audio_path: str, output_path: str, name: str,
-                          duration: int, n_mfcc: int=20, **kwargs):
+                          duration: int, n_mfcc: int=20, verbose_level: int=0,
+                          **kwargs):
     """
     Extract and save mfcc features of an audio file in a binary file in NumPy
     .npy format.
@@ -136,12 +140,22 @@ def extract_and_save_mfcc(audio_path: str, output_path: str, name: str,
         Duration to load up each audio.
     :param name: str
         Output file name.
-    n_mfcc: int > 0 [scalar]
+    :param n_mfcc: int > 0 [scalar]
         number of MFCCs to return.
+    :param verbose_level: int
+        Verbose level
     :param kwargs: Additional kwargs are passed on to the librosa.load function.
     """
+    if verbose_level > 1:
+        print('[INFO] processing file {}'.format(audio_path))
     y, sr = librosa.load(audio_path, duration=duration, **kwargs)
     features = librosa.feature.mfcc(y, sr, n_mfcc=n_mfcc)
+    if verbose_level > 1:
+        print('[INFO] features extracted')
+        print('[INFO] saving file {}.npy'.format(os.path.join(output_path,
+                                                              name)))
+    if verbose_level > 2:
+        print('[FEATURES] > {}'.format(y, sr))
     np.save(file=output_path + os.sep + name, arr=features)
 
 
@@ -165,6 +179,18 @@ if __name__ == '__main__':
                                               'after processing files and save '
                                               'a list of failed files.',
                         action='store_true')
+    parser.add_argument('-R', help='Process files recursively. Note: the '
+                                   'processed files will be saved preserving '
+                                   'the folder name of the raw files. '
+                                   'For example, path/to/the/folder/file.wav '
+                                   'will be saved as '
+                                   'output_dir/folder/file.npy .',
+                        action='store_true', default=False)
+    parser.add_argument('--v', help='Verbose level', type=int, default=0)
+    parser.add_argument('--only_wav', help='Force to process only files '
+                                           'with .wav extension.',
+                        action='store_true', default=False)
+
     os.makedirs('logs/scripts/', exist_ok=True)
 
     # Set source and output directories:
@@ -173,32 +199,88 @@ if __name__ == '__main__':
     output = arguments.output
     dur = arguments.duration
     mfcc = arguments.n_mfcc
+    rec = arguments.R
+    v_level = arguments.v
+    only_wav = arguments.only_wav
 
     # Make directories
-    os.makedirs(output, exist_ok=True)
-
-    files = os.listdir(data_dir)
-
-    # Check processed files to ignore them
-    if arguments.check:
-        print("\n> CHECKING")
-        files = files_to_process(files, output)
+    if rec:
+        if v_level > 1:
+            print('[INFO] recursive mode enabled')
+        folders = []
+        for r, d, f in os.walk(data_dir):
+            for folder in d:
+                if v_level > 1:
+                    print('[INFO] will process directory '
+                          '{}'.format(os.path.join(r, folder)))
+                folders.append(os.path.join(r, folder))
+                if not os.path.isdir(os.path.join(output, folder)):
+                    os.makedirs(os.path.join(output, folder), exist_ok=True)
+                    if v_level > 1:
+                        print('[INFO] creating directory '
+                              '{}'.format(os.path.join(output, folder)))
     else:
-        files = files
+        if v_level > 1:
+            print('[INFO] will process directory {}'.format(data_dir))
+            print('[INFO] creating directory {}'.format(output))
+        os.makedirs(output, exist_ok=True)
+        folders = [data_dir]
 
     print('\n> PROCESSING')
     with Timer() as timer:
-        process_files_in_parallel(fun=extract_and_save_mfcc, duration=dur,
-                                  files_list=files, data_path=data_dir,
-                                  n_mfcc=mfcc, output_path=output,
-                                  workers=arguments.workers)
+        for folder in (tqdm(folders, total=len(folders), unit='dirs',
+                            unit_scale=True, leave=True)
+                       if v_level < 2 else folders):
+            if v_level > 1:
+                print('[INFO] processing folder {}'.format(folder))
+            # Check processed files to ignore them
+            if arguments.check:
+                print("\n> CHECKING")
+                paths = files_to_process(os.listdir(folder),
+                                         os.path.join(output,
+                                                      os.path.basename(folder)))
+            else:
+                paths = os.listdir(folder)
 
+            for path in paths:
+                if os.path.basename(path)[-3:] != 'wav':
+                    if v_level > 1:
+                        print('[WARN] non wav file detected: {}'.format(path))
+                    if only_wav:
+                        print('[INFO] ignoring file {}'.format(path))
+                        paths.remove(path)
+
+            if v_level > 2:
+                print('[FILES] > {}'.format(paths))
+            if arguments.workers == 1:
+                for file in (tqdm(paths) if v_level < 2 else paths):
+                    extract_and_save_mfcc(audio_path=os.path.join(folder, file),
+                                          output_path=os.path.
+                                          join(output,
+                                               os.path.basename(folder)),
+                                          name=os.path.basename(file)[:-4],
+                                          duration=dur,
+                                          n_mfcc=mfcc,
+                                          verbose_level=v_level)
+            else:
+                process_files_in_parallel(fun=extract_and_save_mfcc,
+                                          duration=dur, files_list=paths,
+                                          data_path=os.path.
+                                          join(data_dir,
+                                               os.path.basename(folder)),
+                                          n_mfcc=mfcc,
+                                          output_path=os.path.
+                                          join(output, os.path.
+                                               basename(folder)),
+                                          workers=arguments.workers,
+                                          verbose_level=v_level)
+
+            if arguments.check_after:
+                print("\n> CHECKING")
+                paths = files_to_process(os.listdir(folder),
+                                         os.path.join(output, folder))
+
+                with open('logs/scripts/mfcc_remaining_files.csv', 'w') as file:
+                    for rem_file in paths:
+                            file.write('\n' + rem_file)
     print('WORK DONE, total taken time: %.03f sec.' % timer.interval)
-
-    if arguments.check_after:
-        print("\n> CHECKING")
-        files = files_to_process(files, output)
-
-        with open('logs/scripts/mfcc_remaining_files.csv', 'w') as file:
-            for rem_file in files:
-                file.write('\n' + rem_file)
