@@ -278,7 +278,8 @@ if __name__ == '__main__':
             if arguments.check_after:
                 print("\n> CHECKING")
                 paths = files_to_process(os.listdir(folder),
-                                         os.path.join(output, folder))
+                                         os.path.join(output,
+                                                      os.path.basename(folder)))
 
                 with open('logs/scripts/mfcc_remaining_files.csv', 'w') as file:
                     for rem_file in paths:
