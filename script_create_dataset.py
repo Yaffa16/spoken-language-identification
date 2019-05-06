@@ -168,6 +168,7 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
                 trim_silence_threshold: float=None, rate: int=None,
                 remix_channels: bool=False, speed_changing: float=None,
                 pitch_changing: float=None, noise_path: str=None,
+                robot: bool=False, phone: bool=False,
                 ignore_length: bool=False, verbose_level=0):
     """
     Pre process a file. Use this function to handle raw datasets.
@@ -188,6 +189,10 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
         Trim audio. Default to None (no trim will be performed).
     :param normalize: bool
         Normalizes audio.
+    :param phone: bool
+        Applies phone effect.
+    :param robot: bool
+        Applies robot effect.
     :param trim_silence_threshold: float.
         Threshold value to trim silence from audio. Default to None, no trim
         will be performed.
@@ -307,6 +312,12 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
         file_path = pitch(pitch_changing, file_path, output_dir, name,
                           verbose_level)
         temp_files.add(file_path)
+    if robot:
+        name += '_robot_'
+        file_path = robot_voice(file_path, output_dir, name, verbose_level)
+    if phone:
+        name += '_phone_'
+        file_path = phone_voice(file_path, output_dir, name, verbose_level)
     if normalize:
         name += '_norm_'
         file_path = norm(file_path, output_dir, name, verbose_level)
@@ -588,6 +599,63 @@ def add_noise(noise_path: str, file_path, output_dir, file_name,
     return temp_file_path
 
 
+def phone_voice(file_path: str, output_dir: str, file_name: str,
+                verbose_level=0):
+    """
+    Applies a phone voice effect to an audio file.
+
+    :param file_path: str
+        Path to the audio to apply the effect.
+    :param output_dir: str
+        Output path to the output audio.
+    :param file_name: str
+        Output name.
+    :param verbose_level: int
+        Verbosity level. 2 prints the command. This argument as passed on as
+        a command line option in sox arguments.
+    """
+    temp_file_path = output_dir + os.sep + file_name + '.wav'
+    cmd = 'sox -V{vlevel} {input} {output} highpass 400 lowpass 3.4k'. \
+        format(vlevel=verbose_level,
+               input=file_path,
+               output=temp_file_path)
+    if str(verbose_level) == '2':
+        print(cmd)
+    os.system(cmd)
+    return temp_file_path
+
+
+def robot_voice(file_path: str, output_dir: str, file_name: str,
+                verbose_level=0):
+    """
+    Applies a robot voice effect to an audio file.
+
+    :param file_path: str
+        Path to the audio to apply the effect.
+    :param output_dir: str
+        Output path to the output audio.
+    :param file_name: str
+        Output name.
+    :param verbose_level: int
+        Verbosity level. 2 prints the command. This argument as passed on as
+        a command line option in sox arguments.
+    """
+    temp_file_path = output_dir + os.sep + file_name + '.wav'
+    # cmd = 'sox -V{vlevel} {input} {output} overdrive 10 echo 0.8 0.8 5 0.7 ' \
+    #       'echo 0.8 0.7 6 0.7 echo 0.8 0.7 10 0.7 echo 0.8 0.7 12 0.7    ' \
+    #       'echo 0.8 0.88 12 0.7 echo 0.8 0.88 30 0.7 echo 0.6 0.6 60 0.7'. \
+    cmd = 'sox -V{vlevel} {input} {output} overdrive 10 echo 0.8 0.8 5 0.7 ' \
+          'echo 0.8 0.7 6 0.7 echo 0.8 0.7 10 0.7 echo 0.8 0.7 12 0.7    ' \
+          'echo 0.8 0.88 12 0.7'. \
+        format(vlevel=verbose_level,
+               input=file_path,
+               output=temp_file_path)
+    if str(verbose_level) == '2':
+        print(cmd)
+    os.system(cmd)
+    return temp_file_path
+
+
 def trim(file_path: str, output_dir: str, file_name: str, position, duration,
          verbose_level=0):
     """
@@ -656,8 +724,9 @@ def process_augmentation(dataset_dir: str, file_list: list,
 
 def augment_data(data_path: str, file_list: list, sliding_window: int=None,
                  trimming_window: int=None, seconds: float=5, noises: list=None,
-                 semitones: list=None, speeds: list = None,
-                 num_workers: int=None, verbose_level=0, **kwargs):
+                 semitones: list=None, speeds: list = None, robot: bool=False,
+                 phone: bool=False, num_workers: int=None, verbose_level=0,
+                 **kwargs):
     """
     Augments data by applying audio transformations.
 
@@ -685,6 +754,10 @@ def augment_data(data_path: str, file_list: list, sliding_window: int=None,
     :param speeds: list
         List of speeds to apply in each audio. Each speed will generate a new
         audio.
+    :param robot: bool
+        Add robot effect to audio files.
+    :param phone: bool
+        Add phone effect to audio files.
     :param num_workers: int
         Number of workers for multiprocessing .
     :param verbose_level: int
@@ -732,6 +805,26 @@ def augment_data(data_path: str, file_list: list, sliding_window: int=None,
                                  noise_path=n,
                                  min_length=seconds,
                                  **kwargs)
+    if robot is not None:
+        print('[INFO] processing robot voices')
+        process_augmentation(dataset_dir=data_path,
+                             file_list=file_list,
+                             num_workers=num_workers,
+                             pre_processing=pre_process,
+                             verbose_level=verbose_level,
+                             robot=True,
+                             min_length=seconds,
+                             **kwargs)
+    if phone is not None:
+        print('[INFO] processing robot voices')
+        process_augmentation(dataset_dir=data_path,
+                             file_list=file_list,
+                             num_workers=num_workers,
+                             pre_processing=pre_process,
+                             verbose_level=verbose_level,
+                             phone=True,
+                             min_length=seconds,
+                             **kwargs)
     # Get files paths again and process sliding window or trimming to keep
     # a dataset with equal-length audio files
     # file_list = glob.glob(data_path + '/**/*.wav', recursive=True)
@@ -814,7 +907,7 @@ def augment_data(data_path: str, file_list: list, sliding_window: int=None,
             if os.path.isfile(file):
                 if int(verbose_level) == 2:
                     print('[INFO] removing', file)
-                # os.remove(file)
+                os.remove(file)
 
 
 def process_trim_parallel(audio, output_dir, seconds, trimming_window,
@@ -916,6 +1009,10 @@ if __name__ == '__main__':
                        action='store_true')
     group.add_argument('--pt', help='Pitch: augment data by changing the '
                                     'pitch of audio files.',
+                       action='store_true')
+    group.add_argument('--robot', help='Applies robot voice to audio files.',
+                       action='store_true')
+    group.add_argument('--phone', help='Applies phone voice to audio files.',
                        action='store_true')
     parser.add_argument('--v', help='Change verbosity level (sox output)',
                         default=0)
@@ -1055,6 +1152,8 @@ if __name__ == '__main__':
                          noises=list(NOISES) if arguments.ns else None,
                          semitones=list(SEMITONES) if arguments.pt else None,
                          speeds=list(SPEEDS) if arguments.sp else None,
+                         robot=True if arguments.robot else None,
+                         phone=True if arguments.phone else None,
                          num_workers=workers,
                          remix_channels=False,
                          normalize=False,
