@@ -4,9 +4,32 @@ This script creates a csv file containing data paths and labels to process.
 import argparse
 import random
 import glob
+import os
 import numpy as np
 from util.datasets import balance
 from collections import defaultdict
+
+
+def validate_args(paths, data_balance, shuffle, test_split, val_split):
+    if len(paths_and_labels) % 2 != 0:
+        raise ValueError('Incorrect number of paths and labels.')
+    for p in paths:
+        if not os.path.isdir(p):
+            raise ValueError('Not a valid directory: {}'.format(p))
+    if not data_balance and test_split > 0.0:
+        print('[WARN] Testing split is set but data balancing will not be '
+              'performed.')
+    if not data_balance and val_split > 0.0:
+        print('[WARN] Validation split is set but data balancing will not be '
+              'performed.')
+    if shuffle and test_split > 0.0:
+        print('[WARN] Testing split is set but data shuffling will not be '
+              'performed.')
+    if val_split + test_split > 1.0:
+        raise ValueError('Incorrect split proportion: validation proportion={},'
+                         ' test proportion={} and train proportion={}'.
+                         format(val_split, test_split,
+                                1 - (val_split + test_split)))
 
 
 if __name__ == '__main__':
@@ -36,6 +59,14 @@ if __name__ == '__main__':
                                              'represents the proportion of the '
                                              'dataset to split.',
                         type=float, default=0.0)
+    parser.add_argument('--val_split', help='Creates another two CSV files '
+                                            'and split data paths and labels '
+                                            'into two data sets for training '
+                                            'and testing. Provide a number '
+                                            'between 0.0 and 1.0 that '
+                                            'represents the proportion of the '
+                                            'dataset to split.',
+                        type=float, default=0.0)
     parser.add_argument('--format', help='Format of the data.',
                         default='*')
     parser.add_argument('--r', help='Get paths recursively.',
@@ -44,24 +75,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     paths_and_labels = args.pl
-    if len(paths_and_labels) % 2 != 0:
-        exit('Incorrect number of paths and labels.')
     csv_path = args.f
     recursive = args.r
     data_format = args.format
     shuffle = args.shuffle
     test_split = args.test_split
+    val_split = args.val_split
     data_balance = args.balance
-
-    if data_balance and test_split is None:
-        print('[WARN] Testing split is set but data balancing will not be '
-              'performed.')
-    if shuffle and test_split is None:
-        print('[WARN] Testing split is set but data shuffling will not be '
-              'performed.')
 
     paths = paths_and_labels[0::2]
     labels = paths_and_labels[1::2]
+
+    validate_args(paths, data_balance, shuffle, test_split, val_split)
+
+    splits = [0, 1 - (val_split + test_split), 1 - test_split]
 
     dataset = list()
 
@@ -73,7 +100,10 @@ if __name__ == '__main__':
             file_paths = glob.glob(path + '/*.' + data_format)
         if len(file_paths) == 0:
             print('[ERROR] Not found. Check the path and format provided. '
-                  'Arguments provided:', args)
+                  'Arguments provided:')
+            exit(-1)
+            for k, v in args:
+                print(k, ':', v)
             continue
 
         for file_path in file_paths:
@@ -95,36 +125,49 @@ if __name__ == '__main__':
         print('[INFO] creating a csv file with paths and labels')
         for p, l in zip(file_paths, file_labels):
             csv_file.write(p + ',' + l + '\n')
-
-    if test_split != 0.0:
+    if test_split > 0.0 or val_split > 0.0:
         paths_per_label = defaultdict(lambda: [])
         for p, l in zip(file_paths, file_labels):
             paths_per_label[l].append(p)
-        train_test_paths = list()
-        train_test_labels = list()
+        train_paths = list()
+        train_labels = list()
         val_paths = list()
         val_labels = list()
+        test_paths = list()
+        test_labels = list()
         for label in paths_per_label:
-            train_test_paths += paths_per_label[label][0:len(
-                paths_per_label[label]) - int(
-                test_split * len(paths_per_label[label]))]
-            train_test_labels += [label for _ in range(0, int(len(
-                paths_per_label[label]) - test_split * len(
+            train_paths += paths_per_label[label][splits[0]:int(splits[1]*len(
+                paths_per_label[label]))]
+            train_labels += [label for _ in range(splits[0], int(len(
+                paths_per_label[label]) - splits[1] * len(
                 paths_per_label[label])))]
-            val_paths += paths_per_label[label][-int(
-                test_split * len(paths_per_label[label])):len(
-                paths_per_label[label])]
-            val_labels += [label for _ in range(0, int(test_split * len(
-                paths_per_label[label])))]
+            if val_split > 0.0:
+                val_paths += paths_per_label[label][int(splits[1]*len(
+                    paths_per_label[label])):int(splits[2]*len(
+                    paths_per_label[label]))]
+                val_labels += [label for _ in range(0, int(splits[1] * len(
+                    paths_per_label[label]) - splits[2] * len(
+                    paths_per_label[label])))]
+            if test_split > 0.0:
+                test_paths += paths_per_label[label][int(splits[2]*len(
+                    paths_per_label[label])):len(paths_per_label[label])]
+                test_labels += [label for _ in range(0, int(splits[2] * len(
+                    paths_per_label[label])))]
 
         with open(csv_path[:-4] + '_train_data.csv', 'w') as csv_file:
             print('[INFO] creating a csv file with train data, '
-                  'proportion=', 1 - test_split)
-            for p, l in zip(train_test_paths, train_test_labels):
+                  'total', len(train_paths))
+            for p, l in zip(train_paths, train_labels):
+                csv_file.write(p + ',' + l + '\n')
+
+        with open(csv_path[:-4] + '_val_data.csv', 'w') as csv_file:
+            print('[INFO] creating a csv file with validation data, '
+                  'total', len(val_paths))
+            for p, l in zip(val_paths, val_labels):
                 csv_file.write(p + ',' + l + '\n')
 
         with open(csv_path[:-4] + '_test_data.csv', 'w') as csv_file:
             print('[INFO] creating a csv file with test data, '
-                  'proportion=', test_split)
-            for p, l in zip(val_paths, val_labels):
+                  'total', len(test_paths))
+            for p, l in zip(test_paths, test_labels):
                 csv_file.write(p + ',' + l + '\n')
