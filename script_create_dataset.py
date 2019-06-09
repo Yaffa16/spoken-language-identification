@@ -13,11 +13,15 @@ import concurrent.futures
 import os
 import time
 import glob
-import sys
+import shutil
 import util.syscommand as syscommand
 import numpy as np
 from tqdm import tqdm
 from pydub import AudioSegment
+import pyloudnorm as pyln
+import soundfile as sf
+
+# TODO: move functions to independent modules
 
 # 8 speeds between (0.8, 1.2); remove the speed with value 1
 SPEEDS = np.delete(np.linspace(0.8, 1.2, 9), 4)
@@ -99,8 +103,8 @@ def files_to_process(files_list: list, output_dir: str) -> list:
     return remaining_files
 
 
-def create_dataset(dataset_dir: str, file_list: list, num_workers: int=None,
-                   pre_processing: callable=None, **kwargs):
+def create_dataset(dataset_dir: str, file_list: list, num_workers: int = None,
+                   pre_processing: callable = None, **kwargs):
     """
     Creates a dataset.
 
@@ -163,13 +167,14 @@ def create_dataset(dataset_dir: str, file_list: list, num_workers: int=None,
                                       file=str(f)))
 
 
-def pre_process(file_path: str, output_dir: str, name: str=None,
-                min_length: int=0, trim_interval: tuple=None, normalize=False,
-                trim_silence_threshold: float=None, rate: int=None,
-                remix_channels: bool=False, speed_changing: float=None,
-                pitch_changing: float=None, noise_path: str=None,
-                robot: bool=False, phone: bool=False,
-                ignore_length: bool=False, verbose_level=0):
+def pre_process(file_path: str, output_dir: str, name: str = None,
+                min_length: float = 0, trim_interval: tuple = None,
+                normalize_method: str = 'default', pitch_changing: float = None,
+                noise_path: str = None, trim_silence_threshold: float = None,
+                remix_channels: bool = False, speed_changing: float = None,
+                robot: bool = False, rate: int = None, phone: bool = False,
+                max_instances: int = None, low_pass_filter: float = None,
+                ignore_length: bool = False, verbose_level=0, **kwargs):
     """
     Pre process a file. Use this function to handle raw datasets.
 
@@ -183,16 +188,19 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
         Path to save the processed file.
     :param name:
         Output name. Default to None (preserves the original name).
-    :param min_length: int
+    :param min_length: float
         Minimum length of audio to consider. Skip otherwise.
     :param trim_interval: tuple, shape=(start, end)
         Trim audio. Default to None (no trim will be performed).
-    :param normalize: bool
-        Normalizes audio.
+    :param normalize_method: str
+        Normalization method.
+        Normalize methods: Todo
     :param phone: bool
         Applies phone effect.
     :param robot: bool
         Applies robot effect.
+    :param low_pass_filter: float
+        Applies a low pass filter on.
     :param trim_silence_threshold: float.
         Threshold value to trim silence from audio. Default to None, no trim
         will be performed.
@@ -209,13 +217,24 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
         Path to an audio representing a noise for mixing with the original file.
     :param speed_changing: float
         Percentage representing the changing of the speed of the audio.
+    :param max_instances: int
+        Maximum number of processed instances. Default to none.
     :param ignore_length: bool
         If true, will pass --ignore_length to each audio, forcing the length
         checking. Can slow down the process.
+    :param kwargs: dict
+        Additional kwargs to pass on to the processing functions.
     :param verbose_level: int
         Verbosity level. See sox for more information.
     """
     # New feature (changed at 25/03) -> separate files by directory
+    if max_instances and len(glob.glob(
+            os.path.dirname(output_dir) + '*/**/*.wav', recursive=True)) >= \
+            max_instances:
+        if int(verbose_level) > 1:
+            print('[INFO] maximum dataset size (maximum number of instances) '
+                  'reached')
+        return
     os.makedirs(output_dir, exist_ok=True)
     if int(verbose_level) > 1:
         print('[INFO] processing {file}'.format(file=file_path))
@@ -290,12 +309,26 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
         expected_length = None  # Variable not being used. Rare case.
     if name is None:
         # Todo: change file_path.split to os.path.basename(file_path)[:-4]...
-        # New feature (changed at 25/03)
         name = file_path.split(os.sep)[-1][:-4] + '_'
     # Process each transformation
+    if trim_interval is not None and (speed_changing is None or
+            pitch_changing is None or noise_path is None):
+        # Process trim first if NOT performing data augmentation
+        name += '_trim_' + str(trim_interval[0]) + '_' + str(
+            trim_interval[1]) \
+                + '_'
+        file_path = trim(file_path, output_dir, name, trim_interval[0],
+                         trim_interval[1] - trim_interval[0],
+                         verbose_level)
+        temp_files.add(file_path)
     if remix_channels:
         name += '_remix_'
         file_path = remix(file_path, output_dir, name, verbose_level)
+        temp_files.add(file_path)
+    if low_pass_filter is not None:
+        name += '_lowpass' + str("%.2f" % low_pass_filter) + '_'
+        file_path = lowpass(file_path, output_dir, low_pass_filter, name,
+                            verbose_level)
         temp_files.add(file_path)
     if rate is not None:
         name += '_rate' + str(rate) + '_'
@@ -318,9 +351,11 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
     if phone:
         name += '_phone_'
         file_path = phone_voice(file_path, output_dir, name, verbose_level)
-    if normalize:
+    if normalize_method != 'skip':
         name += '_norm_'
-        file_path = norm(file_path, output_dir, name, verbose_level)
+        target_n = kwargs['target_n'] if 'target_n' in kwargs else None
+        file_path = norm(file_path, output_dir, name, target_n,
+                         normalize_method, verbose_level)
         temp_files.add(file_path)
     if trim_silence_threshold is not None:
         name += '_trs_' + str(trim_silence_threshold) + '_'
@@ -334,7 +369,8 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
         file_path = add_noise(noise_path, file_path, output_dir, name,
                               verbose_level)
         temp_files.add(file_path)
-    if trim_interval is not None:
+    if trim_interval is not None and 'trim' not in name:
+        # Process trim last if performing data augmentation
         name += '_trim_' + str(trim_interval[0]) + '_' + str(
             trim_interval[1]) \
                 + '_'
@@ -342,7 +378,9 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
                          trim_interval[1] - trim_interval[0],
                          verbose_level)
         temp_files.add(file_path)
-
+    if len(temp_files) == 0 and int(verbose_level) > 1:
+        print('[WARN] no pre processing was performed on file', file_path)
+        return
     temp_files.remove(file_path)
 
     # Remove the temporary files
@@ -355,17 +393,70 @@ def pre_process(file_path: str, output_dir: str, name: str=None,
 
 # Helper functions
 
-def norm(file_path: str, output_dir: str, file_name: str, verbose_level: int):
+def norm(file_path: str, output_dir: str, file_name: str, target_value: float,
+         method='default', verbose_level: int = 0) -> str:
+    """
+    Normalizes an audio file.
+
+    :param target_value: float
+        Target value to apply the normalization or the parameter to configure
+        the normalization. See method.
+    :param method: str or callable
+        Normalizes the audio file using the provided method.
+
+        Options: 'default', 'peak', 'loudness'.
+
+        Default will adjust all audio files with the same average amplitude.
+        The choice "loudness" is a implementation of the ITU-R BS.1770-4. The
+        choice "peak" is a implementation where all audio samples are
+        normalized by an amount based on the peak value of each audio.
+        "skip" will skip the normalization process.
+
+        If callable, must return the path to the generated file.
+    :param file_path: str
+        Path to the file.
+    :param output_dir: str
+        Output directory.
+    :param file_name: str
+        Name of the output file.
+    :param verbose_level: int
+        Not being used.
+
+    :return: str
+        Path to the generated file.
+    """
     temp_file_path = output_dir + os.sep + file_name + '.wav'
-    sound = AudioSegment.from_file(file_path, "wav")
-    change_in_d_bfs = (-20.0) - sound.dBFS
-    sound = sound.apply_gain(change_in_d_bfs)
-    sound.export(temp_file_path, format="wav")
+    if method == 'default':
+        if target_value is None:
+            target_value = -20
+        sound = AudioSegment.from_file(file_path, "wav")
+        change_in_d_bfs = (target_value) - sound.dBFS
+        sound = sound.apply_gain(change_in_d_bfs)
+        sound.export(temp_file_path, format="wav")
+    elif method == 'loudness':
+        if target_value is None:
+            target_value = -1
+        data, rate = sf.read(file_path)
+        meter = pyln.Meter(rate)
+        loudness = meter.integrated_loudness(data)
+        loudness_normalized_audio = pyln.normalize.loudness(data, loudness,
+                                                            target_value)
+        sf.write(temp_file_path, loudness_normalized_audio, rate)
+    elif method == 'peak':
+        if target_value is None:
+            target_value = -1
+        data, rate = sf.read(file_path)
+        peak_normalized_audio = pyln.normalize.peak(data, target_value)
+        sf.write(temp_file_path, peak_normalized_audio, rate)
+    elif callable(method):
+        return method(file_path, out_dir, file_name, target_value)
+    else:
+        raise ValueError('Invalid normalization method')
     return temp_file_path
 
 
 def trim_silence_audio(trim_threshold: float, file_path, output_dir, file_name,
-                       verbose_level: int=0) -> str:
+                       verbose_level: int= 0 ) -> str:
     """
     Removes silence.
 
@@ -384,6 +475,7 @@ def trim_silence_audio(trim_threshold: float, file_path, output_dir, file_name,
     :return: str
         Path to the generated file.
     """
+    #  -l 1.0 0.1 1% -1 2.0 1%
     temp_file_path = output_dir + os.sep + file_name + '.wav'
     # todo: add silence threshold argument, in this case, it is set as 1.0
     cmd = 'sox -V{vlevel} {input} {output} '\
@@ -393,24 +485,25 @@ def trim_silence_audio(trim_threshold: float, file_path, output_dir, file_name,
           .format(vlevel=str(verbose_level),
                   input=file_path,
                   output=temp_file_path,
-                  below_periods_duration='l',  # Remove silence or short silence
+                  below_periods_duration='-l',  #Remove silence or short silence
                   # parameter. l means for not remove long periods of silence
-                  above_periods='1',  # Start removing silence from the
+                  above_periods='1.0',  # Start removing silence from the
                   # beginning
                   duration='0.1',  # Minimum duration of silence to remove
                   duration_threshold=trim_threshold,  # Trim silence
                   # (anything less than 1% volume)
                   below_period='-1',  # Remove silence until the end of the file
-                  ignore_period='1.0',  # Ignore small moments of silence
+                  ignore_period='2.0',  # Ignore small moments of silence
                   below_period_threshold=trim_threshold
                   )
+    exit(cmd)
     if str(verbose_level) == '2':
         print(cmd)
     os.system(cmd)
     return temp_file_path
 
 
-def remix(file_path, output_dir, file_name, verbose_level: int=0) -> str:
+def remix(file_path, output_dir, file_name, verbose_level: int = 0) -> str:
     """
     Remix the audio into a single channel audio.
 
@@ -439,7 +532,7 @@ def remix(file_path, output_dir, file_name, verbose_level: int=0) -> str:
 
 
 def convert_rate(rate, file_path, output_dir, file_name,
-                 verbose_level: int=0) -> str:
+                 verbose_level: int = 0) -> str:
     """
     Remix the audio into a single channel audio.
 
@@ -459,10 +552,6 @@ def convert_rate(rate, file_path, output_dir, file_name,
         Path to the generated file.
     """
     temp_file_path = output_dir + os.sep + file_name + '.wav'
-    # Get the current rate
-    # Commented: remove dead code
-    # current_rate = float(get_audio_info(file_path, 'rate', verbose_level))
-
     # Convert the sample rate
     cmd = 'sox -V{vlevel} {input} -r {rate} {output}'.\
           format(vlevel=verbose_level,
@@ -476,7 +565,8 @@ def convert_rate(rate, file_path, output_dir, file_name,
     return temp_file_path
 
 
-def speed(param, file_path, output_dir, file_name, verbose_level: int=0) -> str:
+def speed(param, file_path, output_dir, file_name,
+          verbose_level: int= 0 ) -> str:
     """
     Speed up the provided audio.
 
@@ -508,7 +598,8 @@ def speed(param, file_path, output_dir, file_name, verbose_level: int=0) -> str:
     return temp_file_path
 
 
-def pitch(param, file_path, output_dir, file_name, verbose_level: int=0) -> str:
+def pitch(param, file_path, output_dir, file_name,
+          verbose_level: int = 0) -> str:
     """
     Change the audio pitch (but not tempo).
 
@@ -540,7 +631,7 @@ def pitch(param, file_path, output_dir, file_name, verbose_level: int=0) -> str:
 
 
 def add_noise(noise_path: str, file_path, output_dir, file_name,
-              verbose_level: int=0) -> str:
+              verbose_level: int = 0) -> str:
     """
     Adds noise to an audio file.
 
@@ -560,9 +651,33 @@ def add_noise(noise_path: str, file_path, output_dir, file_name,
         Path to the generated file.
     """
     # Check if the duration of the audio is less than the duration of the noise
-    info = get_audio_info(file_path, 'duration', 'rate', verbose_level)
-    audio_length, rate = float(info['duration']), float(info['rate'])
-    noise_length = float(get_audio_info(noise_path, 'duration', verbose_level))
+    audio_info = get_audio_info(file_path, 'duration', 'rate', verbose_level)
+    audio_length = float(audio_info['duration'])
+    file_rate = float(audio_info['rate'])
+    noise_info = get_audio_info(noise_path, 'duration', 'rate', verbose_level)
+    noise_length = float(noise_info['duration'])
+    noise_rate = float(noise_info['rate'])
+
+    # Fix noise sample rate
+    if noise_rate != file_rate:
+        new_noise = noise_path[:-4] + '_remix_rate' + str(file_rate) + '.wav'
+        if not os.path.isfile(new_noise):
+            cmd = 'sox -V{vlevel} {input} -r {rate} {output} remix 1'.\
+                format(vlevel=verbose_level,
+                       input=noise_path,
+                       rate=file_rate,
+                       output=new_noise)
+            if int(verbose_level) > 1:
+                print('[INFO] The noise {noise} has sample rate of {noise_r}, '
+                      'but the audio file has a rate of {file_rate}. '
+                      'A new file will be generated at '
+                      '{n_noise}'.format(noise=noise_path,
+                                         noise_r=noise_rate,
+                                         file_rate=file_rate,
+                                         n_noise=new_noise))
+            print(cmd)
+            os.system(cmd)
+        noise_path = new_noise
 
     temp_file_path = output_dir + os.sep + file_name + '.wav'
     if audio_length > noise_length:
@@ -571,7 +686,7 @@ def add_noise(noise_path: str, file_path, output_dir, file_name,
               ' sox -V{vlevel} - -m {input} {output}'.\
               format(vlevel=verbose_level,
                      noise=noise_path,
-                     rate=rate,
+                     rate=file_rate,
                      repeat=int(audio_length/noise_length),
                      input=file_path,
                      output=temp_file_path)
@@ -583,7 +698,7 @@ def add_noise(noise_path: str, file_path, output_dir, file_name,
                      noise=noise_path,
                      output=temp_file_path)
 
-    if str(verbose_level) == '2':
+    if int(verbose_level) > 1:
         print(cmd)
     os.system(cmd)    
 
@@ -600,7 +715,7 @@ def add_noise(noise_path: str, file_path, output_dir, file_name,
 
 
 def phone_voice(file_path: str, output_dir: str, file_name: str,
-                verbose_level=0):
+                verbose_level: int = 0) -> str:
     """
     Applies a phone voice effect to an audio file.
 
@@ -625,8 +740,37 @@ def phone_voice(file_path: str, output_dir: str, file_name: str,
     return temp_file_path
 
 
+def lowpass(file_path: str, output_dir: str, frequency: float, file_name: str,
+            verbose_level: int = 0):
+    """
+    Applies a low pass filter to an audio file.
+
+    :param file_path: str
+        Path to the audio to apply the effect.
+    :param output_dir: str
+        Output path to the output audio.
+    :param file_name: str
+        Output name.
+    :param frequency: float
+        Frequency to apply the low pass filter.
+    :param verbose_level: int
+        Verbosity level. 2 prints the command. This argument as passed on as
+        a command line option in sox arguments.
+    """
+    temp_file_path = output_dir + os.sep + file_name + '.wav'
+    cmd = 'sox -V{vlevel} {input} {output} lowpass {value}'.\
+        format(vlevel=verbose_level,
+               input=file_path,
+               output=temp_file_path,
+               value=frequency)
+    if str(verbose_level) == '2':
+        print(cmd)
+    os.system(cmd)
+    return temp_file_path
+
+
 def robot_voice(file_path: str, output_dir: str, file_name: str,
-                verbose_level=0):
+                verbose_level: int = 0):
     """
     Applies a robot voice effect to an audio file.
 
@@ -656,8 +800,8 @@ def robot_voice(file_path: str, output_dir: str, file_name: str,
     return temp_file_path
 
 
-def trim(file_path: str, output_dir: str, file_name: str, position, duration,
-         verbose_level=0):
+def trim(file_path: str, output_dir: str, file_name: str, position: float,
+         duration: float, verbose_level: int = 0):
     """
     Trims an audio file using sox software.
 
@@ -682,14 +826,15 @@ def trim(file_path: str, output_dir: str, file_name: str, position, duration,
                  output=temp_file_path,
                  position=position,
                  duration=duration)
-    if str(verbose_level) == '2':
+    if int(verbose_level) > 1:
         print(cmd)
     os.system(cmd)
     return temp_file_path
 
 
 def process_augmentation(dataset_dir: str, file_list: list,
-                         num_workers: int=None, pre_processing: callable=None,
+                         num_workers: int = None,
+                         pre_processing: callable = None,
                          **kwargs):
     print('[INFO] processing augmentation for dataset {dataset}'.
           format(dataset=dataset_dir))
@@ -722,10 +867,12 @@ def process_augmentation(dataset_dir: str, file_list: list,
             pass
 
 
-def augment_data(data_path: str, file_list: list, sliding_window: int=None,
-                 trimming_window: int=None, seconds: float=5, noises: list=None,
-                 semitones: list=None, speeds: list = None, robot: bool=False,
-                 phone: bool=False, num_workers: int=None, verbose_level=0,
+def augment_data(data_path: str, file_list: list, sliding_window: int = None,
+                 trimming_window: int = None, seconds: float = 5,
+                 noises: list = None, semitones: list = None,
+                 speeds: list = None, robot: bool = False,
+                 phone: bool = False, num_workers: int=None,
+                 verbose_level: int = 0, low_pass_filter: float = None,
                  **kwargs):
     """
     Augments data by applying audio transformations.
@@ -754,6 +901,8 @@ def augment_data(data_path: str, file_list: list, sliding_window: int=None,
     :param speeds: list
         List of speeds to apply in each audio. Each speed will generate a new
         audio.
+    :param low_pass_filter: float
+        Applies a low pass filter of the provided frequency on audio files.
     :param robot: bool
         Add robot effect to audio files.
     :param phone: bool
@@ -825,6 +974,16 @@ def augment_data(data_path: str, file_list: list, sliding_window: int=None,
                              phone=True,
                              min_length=seconds,
                              **kwargs)
+    if low_pass_filter is not None:
+        print('[INFO] processing low pass filter')
+        process_augmentation(dataset_dir=data_path,
+                             file_list=file_list,
+                             num_workers=num_workers,
+                             pre_processing=pre_process,
+                             verbose_level=verbose_level,
+                             low_pass_filter=low_pass_filter,
+                             min_length=seconds,
+                             **kwargs)
     # Get files paths again and process sliding window or trimming to keep
     # a dataset with equal-length audio files
     # file_list = glob.glob(data_path + '/**/*.wav', recursive=True)
@@ -856,14 +1015,14 @@ def augment_data(data_path: str, file_list: list, sliding_window: int=None,
 
                 audio_length = float(get_audio_info(audio, 'duration',
                                      verbose_level))
-                for i in range(0, int(audio_length) - trimming_window,
-                               trimming_window):
+                # Changed: from range to np.arange
+                for i in np.arange(0, audio_length - trimming_window,
+                                   trimming_window):
                     if int(verbose_level) > 0:
                         print('[INFO] processing trimming window of {} '
                               '[trimming {} to {}] - [{}/{}]'.
                               format(audio, i, i + seconds, i,
                                      int(audio_length) - trimming_window))
-
                     pre_process(output_dir=data_path + os.sep +
                                            os.path.basename(os.path.
                                                             dirname(audio)),
@@ -884,7 +1043,8 @@ def augment_data(data_path: str, file_list: list, sliding_window: int=None,
                                       seconds=seconds,
                                       trimming_window=trimming_window,
                                       num_workers=num_workers,
-                                      verbose_level=verbose_level)
+                                      verbose_level=verbose_level,
+                                      **kwargs)
 
     elif seconds is not None:
         print('[INFO] trimming audio files')
@@ -922,8 +1082,8 @@ def process_trim_parallel(audio, output_dir, seconds, trimming_window,
                                    min_length=int(seconds),
                                    trim_interval=(i, i + seconds),
                                    **kwargs)
-                   for i in range(0, int(audio_length) - trimming_window,
-                                  trimming_window)]
+                   for i in np.arange(0, audio_length - trimming_window,
+                                      trimming_window)]
 
         kw = {
             'total': len(futures),
@@ -935,7 +1095,12 @@ def process_trim_parallel(audio, output_dir, seconds, trimming_window,
             pass
 
 
+def make_json_file(directory):
+    raise NotImplementedError
+
+
 if __name__ == '__main__':
+    # Todo: add command line options for data augmentation
     import json
     import argparse
     import importlib
@@ -944,93 +1109,141 @@ if __name__ == '__main__':
     # Command line arguments:
     parser = argparse.ArgumentParser(description='Generates a dataset of audio '
                                                  'files in a proper format.')
-    parser.add_argument('corpus', help='Corpus information (JSON file)')
-    parser.add_argument('output', help='Output directory.')
-    parser.add_argument('--seconds', help='Length of audio files in seconds.',
+    parser.add_argument('input',
+                        help='Corpus information (JSON file) or directory')
+    parser.add_argument('output',
+                        help='Output directory.')
+    parser.add_argument('-n', '--normalization',
+                        help='Normalize audio files. '
+                             'Default will adjust all audio files with the '
+                             'same average amplitude. The choice "loudness" '
+                             'is a implementation of the ITU-R BS.1770-4. The '
+                             'choice "peak" is a implementation where all '
+                             'audio samples are normalized by an amount based '
+                             'on the peak value of each audio. "skip" will '
+                             'skip the normalization process.',
+                        choices=['default', 'loudness', 'peak', 'skip'],
+                        default='default')
+    norm_args = parser.add_argument_group('Normalization options')
+    norm_args.add_argument('--target_norm',
+                           help='Desired target of the selected normalization '
+                                'method. Available for "peak" and "loudness" '
+                                'normalization.'
+                                'The default for the "default" algorithms is '
+                                '-20. The default for the "loudness" and '
+                                '"peak" algorithms are -1.',
+                           type=float)
+    parser.add_argument('-s', '--seconds',
+                        help='Length of audio files in seconds.',
+                        type=float)
+    parser.add_argument('-ts', '--trim_silence',
+                        help='Volume threshold to trim silence from audio '
+                             'files. Default to 0, no trim will be performed. '
+                             'Recommended values: 1 - 5',
+                        type=float,
+                        default=None)
+    parser.add_argument('-sr', '--samplerate',
+                        help='Set the output rate of audio files.')
+    parser.add_argument('-lp', '--lowpass',
+                        help='Applies a low pass filter on audio files.',
+                        type=float)
+    parser.add_argument('-w', '--workers',
+                        help='Define how many process to run in parallel.',
+                        default=4,
                         type=int)
-    parser.add_argument('--trim_silence', help='Volume threshold to trim '
-                                               'silence from audio files. '
-                                               'Default to 0, no trim will be '
-                                               'performed. '
-                                               'Recommended values: 1 - 5',
-                        type=float, default=None)
-    parser.add_argument('--rate', help='Set the output rate of audio files.')
-    parser.add_argument('--workers', help='Define how many process to run in '
-                                          'parallel.', default=4, type=int)
-    parser.add_argument('--check', help='Check output directories ignoring '
-                                        'files already processed. '
-                                        'Note: augmented data will not be '
-                                        'checked.',
+    parser.add_argument('-c', '--check',
+                        help='Check output directories ignoring files already '
+                             'processed. Note: augmented data will not be '
+                             'checked.',
                         action='store_true')
-    parser.add_argument('--just_check', help='Check output directories. A csv '
-                                             'log file will be created '
-                                             'containing the remaining files to'
-                                             ' process. No processing will be '
-                                             'performed. '
-                                             'Note: augmented data will not be '
-                                             'checked.',
+    parser.add_argument('-jc', '--just_check',
+                        help='Check output directories. A csv log file will be '
+                             'created containing the remaining files to '
+                             'process. No processing will be performed. '
+                             'Note: augmented data will not be checked.',
                         action='store_true')
-    parser.add_argument('--limit', help='Set a limit of files to process. '
-                                        'Useful when the data is unbalanced '
-                                        'and the process is slow. Set this '
-                                        'parameter as -1 to do it '
-                                        'automatically. This limit is '
-                                        'applied before the pre processing, so '
-                                        'it does not balances the data.',
+    parser.add_argument('-l', '--limit',
+                        help='Set a limit of files to process. Useful when the '
+                             'data is unbalanced and the process is slow. Set '
+                             'this parameter as -1 to do it automatically. '
+                             'This limit is applied before the pre processing, '
+                             'so it does not balances the data.',
                         type=int)
-    parser.add_argument('--length_checking', help='Will force length checking '
-                                                  'of each audio. This will '
-                                                  'pass --ignore_length to '
-                                                  'sox. Can slow down the '
-                                                  'process. Recommended if the '
-                                                  'processing is skipping some '
-                                                  'audio files. ',
+    parser.add_argument('-m', '--max',
+                        help='Set a maximum number of processed files of each '
+                             'class. Useful when the data is unbalanced and '
+                             'the process is slow. This limit is applied '
+                             'during the pre processing process. The number of '
+                             'instances will be balanced if you provide a '
+                             'number of instances that all class have. '
+                             'It does not apply to augmented data.',
+                        type=int)
+    parser.add_argument('-lc', '--length_checking',
+                        help='Will force length checking of each audio. '
+                             'This will pass --ignore_length to sox. Can slow '
+                             'down the process. Recommended if the processing '
+                             'is skipping some audio files. ',
                         action='store_true')
-    group = parser.add_argument_group('Data augmentation options')
-    group.add_argument('--sw', help='Sliding window: augments data '
-                                    'by trimming audio files in '
-                                    'different positions. Must provide the '
-                                    '[seconds] argument',
-                       action='store_true')
-    group.add_argument('--tw', help='Trimming window:Trims audio files in '
-                                    'different positions. Use this if your '
-                                    'dataset have large speeches to process. '
-                                    'This operation will trim the original file'
-                                    ' in small speeches of length [seconds]. '
-                                    'Must provide the [seconds] argument.',
-                       action='store_true')
-    group.add_argument('--sp', help='Speed: augments data '
-                                    'by changing the speed of the audio '
-                                    'files.',
-                       action='store_true')
-    group.add_argument('--ns', help='Noise: augments data '
-                                    'by adding noise in the audio '
-                                    'files.',
-                       action='store_true')
-    group.add_argument('--pt', help='Pitch: augment data by changing the '
-                                    'pitch of audio files.',
-                       action='store_true')
-    group.add_argument('--robot', help='Applies robot voice to audio files.',
-                       action='store_true')
-    group.add_argument('--phone', help='Applies phone voice to audio files.',
-                       action='store_true')
-    parser.add_argument('--v', help='Change verbosity level (sox output)',
+    aug_args = parser.add_argument_group('Data augmentation options')
+    aug_args.add_argument('-sw', '--sliding_window',
+                          help='Sliding window: augments data by trimming '
+                               'audio files in different positions. Must '
+                               'provide the [seconds] argument',
+                          action='store_true')
+    aug_args.add_argument('-tw', '--trimming_window',
+                          help='Trimming window:Trims audio files in different '
+                               'positions. Use this if your dataset have large '
+                               'speeches to process. This operation will trim '
+                               'the original file in small speeches of '
+                               'length [seconds]. Must provide the [seconds] '
+                               'argument.',
+                          action='store_true')
+    aug_args.add_argument('-lpa', '--low_pass_augment',
+                          help='Low pass filter: augments data by applying a '
+                               'low pass filter on audio files.',
+                          type=float)
+    aug_args.add_argument('-sp', '--speed',
+                          help='Speed: augments data by changing the speed of '
+                               'the audio files.',
+                          action='store_true')
+    aug_args.add_argument('-ns', '--noise',
+                          help='Noise: augments data by adding noise in the '
+                               'audio files.',
+                          action='store_true')
+    aug_args.add_argument('-pt', '--pitch',
+                          help='Pitch: augment data by changing the pitch of '
+                               'audio files.',
+                          action='store_true')
+    aug_args.add_argument('--robot', help='Applies robot voice to audio files.',
+                          action='store_true')
+    aug_args.add_argument('--phone', help='Applies phone voice to audio files.',
+                          action='store_true')
+    parser.add_argument('-v', '--verbose',
+                        help='Change verbosity level. Will affect all outputs.',
                         default=0)
 
     # Set arguments settings:
     arguments = parser.parse_args()
-    data_dir = arguments.corpus
+    data_dir = arguments.input
     output = arguments.output
-    seconds = arguments.seconds
-    output_rate = arguments.rate
+    duration = arguments.seconds
+    output_rate = arguments.samplerate
     workers = arguments.workers
-    verbose = arguments.v
+    verbose = arguments.verbose
     limit = arguments.limit
     trim_silence = arguments.trim_silence
     length_checking = arguments.length_checking
+    normalization = arguments.normalization
+    max_inst = arguments.max
+    low_pass = arguments.lowpass
+    low_pass_aug = arguments.low_pass_augment
+    target_norm = arguments.target_norm
+    if os.path.isdir(data_dir):
+        make_json_file(data_dir)
 
-    data_augmentation = arguments.pt or arguments.sp or arguments.ns or \
-        arguments.sw or arguments.tw
+    data_augmentation = arguments.pitch or arguments.speed or \
+                        arguments.noise or arguments.sliding_window or \
+                        arguments.trimming_window or arguments.low_pass_augment
 
     # Enable logging the remaining files with just check option.
     if arguments.just_check:
@@ -1096,21 +1309,6 @@ if __name__ == '__main__':
 
     print('TOTAL FILES TO BE PROCESSED: %d\n' %
           (sum(len(b) for b in files_list_lang.values())))
-    # Print summaries:
-    pandas_found = importlib.util.find_spec('pandas')
-    if pandas_found is not None:
-        pandas_lib = importlib.import_module('pandas')
-        pd = pandas_lib.pandas
-
-        print('\nORIGINAL BASES\n--------------')
-        print(pd.DataFrame(bases_json))
-
-        d = dict()
-        d['New base'] = list(files_list_lang.keys())
-        d['Total samples'] = list(map(lambda x: len(files_list_lang[x]),
-                                      files_list_lang))
-        print('\nSUMMARY\n-------')
-        print(str(pd.DataFrame(d)) + '\n')
 
     if arguments.just_check:
         exit(0)
@@ -1120,21 +1318,45 @@ if __name__ == '__main__':
         if len(files_list_lang[base]) == 0:
             continue
         print('[INFO] processing base "%s"' % base)
+
+        if os.path.isdir(os.path.join(output, base)):
+            for dr in os.listdir(output + os.sep + base):
+                if os.path.isdir(os.path.join(output, base, dr)) and \
+                        dr[0] == '_':
+                    if int(verbose) > 1:
+                        print('[INFO] removing', os.path.join(output, base, dr))
+                    shutil.rmtree(os.path.join(output, base, dr))
+
         create_dataset(
             dataset_dir=output + os.sep + base,
             file_list=files_list_lang[base],
             num_workers=workers,
             pre_processing=pre_process,
             verbose_level=verbose,
-            min_length=seconds if seconds is not None else 0,
+            min_length=duration if duration is not None else 0,
             rate=output_rate,
-            normalize=True,
+            normalize_method=normalization,
+            target_n=target_norm,
             remix_channels=True,
             ignore_length=length_checking,
             trim_silence_threshold=trim_silence,
-            trim_interval=(0, seconds)  # Disable trim if data augmentation is
+            max_instances=max_inst,
+            low_pass_filter=low_pass if low_pass is not None else None,
+            trim_interval=(0, duration)  # Disable trim if data augmentation is
             # enabled:
-            if seconds is not None and not data_augmentation else None)
+            if duration is not None and not data_augmentation else None)
+        if max_inst:
+            # When parallelism is enabled and the maximum size is set, there
+            # might be excesses
+            if not len(os.listdir(output + os.sep + base)) < 1:
+                excess = os.listdir(output + os.sep + base)[max_inst:]
+                shuffle(excess)
+                if int(verbose) > 1:
+                    print('[INFO] deleting excess of base', base)
+                    for d in excess:
+                        shutil.rmtree(output + os.sep + base + os.sep + d)
+            elif int(verbose) > 1:
+                print('[WARN] empty folder', output + os.sep + base)
         if data_augmentation:
             # The raw files will be removed, that is, all wav files in the
             # output folder, except the processed files.
@@ -1146,17 +1368,20 @@ if __name__ == '__main__':
             print('[INFO] processing data augmentation')
             augment_data(output + os.sep + base,
                          file_list=raw_files,
-                         sliding_window=2 if arguments.sw else None,
-                         trimming_window=seconds if arguments.tw else None,
-                         seconds=seconds,
-                         noises=list(NOISES) if arguments.ns else None,
-                         semitones=list(SEMITONES) if arguments.pt else None,
-                         speeds=list(SPEEDS) if arguments.sp else None,
+                         sliding_window=2 if arguments.sliding_window else None,
+                         trimming_window=duration if arguments.trimming_window
+                         else None,
+                         seconds=duration,
+                         noises=list(NOISES) if arguments.noise else None,
+                         semitones=list(SEMITONES) if arguments.pitch else None,
+                         speeds=list(SPEEDS) if arguments.speed else None,
                          robot=True if arguments.robot else None,
                          phone=True if arguments.phone else None,
                          num_workers=workers,
                          remix_channels=False,
-                         normalize=False,
+                         low_pass_filter=low_pass_aug if low_pass_aug is not
+                         None else None,
+                         normalize_method='skip',
                          verbose_level=verbose)
             # Remove raw files
             # If the data augmentation is enabled, the length of each audio
@@ -1169,6 +1394,9 @@ if __name__ == '__main__':
                     if int(verbose) == 2:
                         print('[INFO] removing', fp)
                     os.remove(fp)
+
+        # Update directories: remove the underscore of each folder. This means
+        # that the process has done successfully.
         for dr in os.listdir(output + os.sep + base):
             if len(os.listdir(output + os.sep + base + os.sep + dr)) == 0:
                 os.rmdir(output + os.sep + base + os.sep + dr)
