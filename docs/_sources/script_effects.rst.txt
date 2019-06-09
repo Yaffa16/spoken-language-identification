@@ -1,7 +1,0 @@
-script\_effects module
-======================
-
-.. automodule:: script_effects
-    :members:
-    :undoc-members:
-    :show-inheritance:

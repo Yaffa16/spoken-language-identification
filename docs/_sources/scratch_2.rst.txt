@@ -1,7 +1,0 @@
-scratch\_2 module
-=================
-
-.. automodule:: scratch_2
-    :members:
-    :undoc-members:
-    :show-inheritance:

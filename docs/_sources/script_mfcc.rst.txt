@@ -1,7 +1,0 @@
-script\_mfcc module
-===================
-
-.. automodule:: script_mfcc
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -1,7 +1,0 @@
-script\_create\_dataset module
-==============================
-
-.. automodule:: script_create_dataset
-    :members:
-    :undoc-members:
-    :show-inheritance:

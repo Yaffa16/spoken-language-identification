@@ -1,7 +1,0 @@
-search\_hyperparams module
-==========================
-
-.. automodule:: search_hyperparams
-    :members:
-    :undoc-members:
-    :show-inheritance:
