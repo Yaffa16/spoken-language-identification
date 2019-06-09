@@ -29,7 +29,10 @@ SPEEDS = np.delete(np.linspace(0.8, 1.2, 9), 4)
 # 8 semitones between (-200, 200); remove the semitone with value 0
 SEMITONES = np.delete(np.linspace(-200, 200, 9), 4)
 
-NOISES = list(glob.glob('preprocessing/noises/**/*.wav', recursive=True))
+NOISES = ['preprocessing/noises/ambiance.wav',
+          'preprocessing/noises/crowd.wav',
+          'preprocessing/noises/street.wav',
+          'preprocessing/noises/driving.wav']
 
 
 def get_audio_info(file_path, *args, verbose_level=0):
@@ -496,7 +499,6 @@ def trim_silence_audio(trim_threshold: float, file_path, output_dir, file_name,
                   ignore_period='2.0',  # Ignore small moments of silence
                   below_period_threshold=trim_threshold
                   )
-    exit(cmd)
     if str(verbose_level) == '2':
         print(cmd)
     os.system(cmd)
